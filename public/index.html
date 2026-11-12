@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>反向貪食蛇</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{--bg:#f6efe1;--ink:#2b2a26;--red:#e0332f;--green:#2f7d3a;--gold:#f2b705;--blue:#3d8bff;--card:#fffaf0;--purple:#8b5cf6}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans TC',system-ui,-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif}
+body{min-height:100vh;display:flex;justify-content:center;padding:14px 12px 28px;
+  background-image:radial-gradient(rgba(43,42,38,.07) 1.2px,transparent 1.2px);background-size:18px 18px}
+.wrap{width:min(560px,100%);display:flex;flex-direction:column;align-items:center;gap:10px}
+header{width:100%;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{margin:0;font-weight:900;font-size:clamp(26px,6.5vw,38px);letter-spacing:.04em;line-height:1.05;cursor:pointer}
+h1 span{color:var(--green)}
+.sub{margin:5px 0 0;font-size:14px;opacity:.75}
+.seg{display:flex;border:3px solid var(--ink);border-radius:12px;overflow:hidden;box-shadow:3px 3px 0 var(--ink);flex-shrink:0;background:var(--card)}
+.seg button{all:unset;cursor:pointer;padding:7px 15px;font-weight:900;font-size:16px}
+.seg button+button{border-left:3px solid var(--ink)}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.stats{width:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stat{background:var(--card);border:3px solid var(--ink);border-radius:12px;padding:4px 6px;text-align:center;min-width:0}
+.stat b{display:block;font-size:19px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat span{font-size:12px;opacity:.7;white-space:nowrap}
+.fx{width:100%;display:flex;align-items:center;gap:10px;min-height:46px}
+#mini{flex-shrink:0;display:none;border-radius:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;flex:1;align-items:center}
+.chip{background:var(--card);border:2px solid var(--ink);border-radius:999px;padding:1px 9px;font-size:13px;font-weight:700;white-space:nowrap}
+.chip.bad{background:#ffe1dc;border-color:#b3261e}
+.chip.floor{background:#efe7ff;border-color:#5b3bb5}
+.muted{font-size:12.5px;opacity:.55}
+.stage{position:relative;width:min(560px,100%,max(300px,calc(100vh - 300px)));aspect-ratio:1/1;border:3px solid var(--ink);border-radius:18px;
+  box-shadow:6px 6px 0 var(--ink);overflow:hidden;background:#cfe6b0;touch-action:none;user-select:none;-webkit-user-select:none}
+.stage.is3d{background:radial-gradient(circle at 50% 35%,#fffaf0 0%,#efe3c8 70%,#e4d3ae 100%)}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage::after{content:'';position:absolute;inset:0;pointer-events:none;border-radius:15px;box-shadow:inset 0 0 0 0 rgba(224,51,47,0);transition:box-shadow .25s;z-index:3}
+.stage.danger::after{box-shadow:inset 0 0 70px 12px rgba(224,51,47,.42)}
+.stage.shake{animation:shake .35s}
+.stage.flash::before{content:'';position:absolute;inset:0;background:#fff;z-index:3;pointer-events:none;animation:flash .35s forwards}
+@keyframes flash{from{opacity:.75}to{opacity:0}}
+@keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-6px,3px)}40%{transform:translate(5px,-4px)}60%{transform:translate(-4px,-2px)}80%{transform:translate(3px,4px)}}
+.overlay{position:absolute;inset:0;display:flex;align-items:safe center;justify-content:center;overflow:auto;background:rgba(246,239,225,.84);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);padding:14px;z-index:5}
+.overlay.hide{display:none}
+.panel{background:var(--card);border:3px solid var(--ink);border-radius:16px;box-shadow:5px 5px 0 var(--ink);padding:14px 16px;max-width:380px;width:100%;text-align:center;margin:auto}
+.panel.wide{max-width:430px}
+.panel .big{font-size:38px;line-height:1.1}
+.panel h2{margin:4px 0 6px;font-size:22px;font-weight:900}
+.panel p{margin:0 0 9px;font-size:14.5px;line-height:1.6}
+.panel ul{text-align:left;margin:0 auto 12px;padding:0;list-style:none;font-size:13.5px;line-height:1.8;max-width:310px}
+.panel .rec{color:var(--red);font-weight:900}
+.btn{all:unset;cursor:pointer;display:inline-block;background:var(--red);color:#fff;font-weight:900;font-size:17px;padding:8px 22px;border:3px solid var(--ink);border-radius:12px;box-shadow:3px 3px 0 var(--ink)}
+.btn.sec{background:var(--card);color:var(--ink)}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btnrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:4px}
+.hint{font-size:12px;opacity:.65;margin-top:10px;line-height:1.6}
+.menu{display:grid;gap:9px;margin:8px 0 2px}
+.menu button,.lv button{all:unset;cursor:pointer;background:#fff;border:3px solid var(--ink);border-radius:12px;box-shadow:3px 3px 0 var(--ink);padding:8px 12px;text-align:left;font-weight:900;font-size:17px}
+.menu button small,.lv button small{display:block;font-weight:500;font-size:12.5px;opacity:.72;margin-top:1px;line-height:1.45}
+.menu button:active,.lv button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.lv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 12px}
+.lv button{font-size:15px;padding:7px 9px}
+.lv button .n{font-size:11.5px;font-weight:700;opacity:.55;display:block}
+.lv button.locked{opacity:.42;cursor:not-allowed}
+.lv button.done{background:#eaf6df}
+.guide{text-align:left;display:grid;gap:7px;font-size:13.5px;line-height:1.5;margin:6px 0 12px}
+.guide div{display:flex;gap:9px;align-items:flex-start}
+.guide .e{font-size:20px;width:28px;text-align:center;flex-shrink:0;line-height:1.2}
+.guide .bad b{color:#b3261e}
+.guide h3{margin:6px 0 0;font-size:14px}
+.popup{position:absolute;z-index:4;font-weight:900;font-size:15px;white-space:nowrap;pointer-events:none;color:var(--ink);
+  text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 6px #fff,0 0 8px #fff;animation:rise 1.25s ease-out forwards}
+.popup.gold{color:#a87400}.popup.red{color:var(--red)}.popup.blue{color:#1f63d6}.popup.green{color:var(--green)}.popup.purple{color:#5b3bb5}
+@keyframes rise{0%{opacity:0;transform:translate(-50%,-30%) scale(.7)}15%{opacity:1;transform:translate(-50%,-70%) scale(1.12)}100%{opacity:0;transform:translate(-50%,-190%) scale(1)}}
+.tip{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;width:min(92%,370px);z-index:6;background:var(--card);border:3px solid var(--ink);border-radius:14px;
+  box-shadow:4px 4px 0 var(--ink);padding:10px 12px;display:none;animation:tipin .25s ease-out}
+.tip.top{bottom:auto;top:12px}
+.tip.show{display:block}
+@keyframes tipin{from{opacity:0;transform:translate(-50%,10px) scale(.96)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+.tip .row{display:flex;gap:10px;align-items:flex-start}
+.tip .e{font-size:34px;line-height:1;flex-shrink:0}
+.tip .tag{display:inline-block;font-size:11.5px;font-weight:900;border-radius:999px;padding:0 8px;margin-bottom:2px;background:#e3f3d6;color:var(--green);border:2px solid var(--green)}
+.tip .tag.bad{background:#ffe1dc;color:#b3261e;border-color:#b3261e}
+.tip .tag.info{background:#efe7ff;color:#5b3bb5;border-color:#5b3bb5}
+.tip b{font-size:16px}
+.tip p{margin:2px 0 0;font-size:13.5px;line-height:1.5}
+.tip .go{all:unset;cursor:pointer;display:block;text-align:center;margin-top:8px;background:var(--ink);color:var(--bg);font-weight:900;border-radius:10px;padding:6px;font-size:14px}
+.itemlist{display:grid;grid-template-columns:1fr 1fr;gap:5px 8px;text-align:left;margin:4px 0 12px;font-size:13px}
+.itemlist span{background:#fff;border:2px solid rgba(43,42,38,.25);border-radius:9px;padding:3px 7px;line-height:1.35}
+.itemlist small{display:block;font-size:11.5px;opacity:.7}
+.itemlist .bad{border-color:#e9a59c;background:#fff4f2}
+.roomcode{font-size:40px;font-weight:900;letter-spacing:.18em;margin:2px 0 6px;font-variant-numeric:tabular-nums}
+.joinrow{display:flex;gap:8px;justify-content:center;margin:10px 0}
+.joinrow input{font:inherit;font-size:20px;font-weight:900;letter-spacing:.15em;text-transform:uppercase;width:150px;text-align:center;border:3px solid var(--ink);border-radius:12px;padding:6px 8px;background:#fff}
+.players{display:grid;gap:6px;margin:6px 0 12px;text-align:left;font-size:14px}
+.players div{background:#fff;border:2px solid rgba(43,42,38,.25);border-radius:10px;padding:5px 10px;display:flex;justify-content:space-between;gap:8px}
+.players .wait{opacity:.55}
+.rolepick{display:flex;gap:8px;justify-content:center;margin-bottom:10px}
+.rolepick button{all:unset;cursor:pointer;border:3px solid var(--ink);border-radius:12px;padding:6px 14px;font-weight:900;background:#fff}
+.rolepick button.on{background:var(--ink);color:var(--bg)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.keys{font-size:13px;opacity:.7;text-align:center;line-height:1.7}
+kbd{display:inline-block;border:2px solid var(--ink);border-bottom-width:3px;border-radius:6px;padding:0 6px;font:inherit;font-weight:700;background:var(--card);font-size:12px}
+.pad{display:none;grid-template-columns:repeat(3,62px);grid-template-rows:repeat(2,54px);gap:8px;margin-top:2px}
+.pad button{all:unset;display:flex;align-items:center;justify-content:center;background:var(--card);border:3px solid var(--ink);border-radius:12px;box-shadow:3px 3px 0 var(--ink);font-size:22px;font-weight:900;touch-action:none;-webkit-tap-highlight-color:transparent}
+.pad button:active,.pad button.down{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink);background:#f1e4c6}
+.pad .u{grid-column:2;grid-row:1}.pad .l{grid-column:1;grid-row:2}.pad .d{grid-column:2;grid-row:2}.pad .r{grid-column:3;grid-row:2}.pad .p{grid-column:3;grid-row:1;font-size:16px}
+@media (pointer:coarse){.pad{display:grid}.keys{display:none}}
+@media (max-width:480px){
+  .overlay{padding:8px}.panel{padding:10px 11px;border-radius:14px}.panel .big{font-size:28px}.panel h2{font-size:19px;margin:2px 0 5px}
+  .panel p{font-size:13px;margin-bottom:6px;line-height:1.5}.panel ul{font-size:12.5px;line-height:1.65;margin-bottom:9px}
+  .btn{font-size:15px;padding:6px 16px}.hint{margin-top:7px}
+  .menu{gap:7px}.menu button{font-size:15px;padding:6px 10px}.menu button small{font-size:11.5px}
+  .lv{gap:6px}.lv button{font-size:13.5px;padding:5px 7px}.lv button small{font-size:11px}
+  .guide{font-size:12.5px;gap:5px}
+  .stat b{font-size:16px}.stat span{font-size:11px}.chip{font-size:12px}
+  .home .big,.home>p{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 id="title" title="回主選單">反向<span>貪食蛇</span></h1>
+      <p class="sub">這次，你是那顆蘋果。別被吃掉！</p>
+    </div>
+    <div class="seg" role="group" aria-label="視角">
+      <button id="m2" class="on">2D</button><button id="m3">3D</button>
+    </div>
+  </header>
+  <div class="stats">
+    <div class="stat"><b id="v0">-</b><span id="l0">分數</span></div>
+    <div class="stat"><b id="v1">-</b><span id="l1">存活秒數</span></div>
+    <div class="stat"><b id="v2">-</b><span id="l2">蛇長</span></div>
+    <div class="stat"><b id="v3">-</b><span id="l3">最高分</span></div>
+  </div>
+  <div class="fx"><canvas id="mini"></canvas><div class="chips" id="chips"></div></div>
+  <div class="stage" id="stage">
+    <canvas id="c2"></canvas>
+    <canvas id="c3" style="display:none"></canvas>
+    <div class="tip" id="tip"></div>
+    <div class="overlay" id="overlay"></div>
+  </div>
+  <div class="pad" id="pad">
+    <button class="u" data-dir="up" aria-label="上">▲</button>
+    <button class="p" data-act="pause" aria-label="暫停">❚❚</button>
+    <button class="l" data-dir="left" aria-label="左">◀</button>
+    <button class="d" data-dir="down" aria-label="下">▼</button>
+    <button class="r" data-dir="right" aria-label="右">▶</button>
+  </div>
+  <div class="keys" id="keys"><kbd>←↑↓→</kbd> 或 <kbd>WASD</kbd> 移動　<kbd>空白鍵</kbd> 暫停　<kbd>2</kbd> <kbd>3</kbd> 切換視角</div>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ================= 常數與設定 ================= */
+const TAU = Math.PI * 2, FH = 3.6, TWEEN = 85;
+const DIRS = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] };
+const DLIST = ['up','down','left','right'];
+const OPP = { up:'down', down:'up', left:'right', right:'left' };
+const $ = s => document.querySelector(s);
+const stage = $('#stage'), cv2 = $('#c2'), cv3 = $('#c3'), overlay = $('#overlay');
+const mini = $('#mini'), chipsEl = $('#chips');
+const ctx = cv2.getContext('2d'), mctx = mini.getContext('2d');
+const isTouch = !!(window.matchMedia && matchMedia('(pointer:coarse)').matches);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, String(v)); } catch (e) {} }
+};
+let bestScore = parseInt(store.get('reverse-snake-best', '0'), 10) || 0;
+let cleared = parseInt(store.get('reverse-snake-cleared', '0'), 10) || 0;
+const vsTally = { apple:0, snake:0 };
+let view = '2d', T = null, held = [];
+let seen = new Set();
+try { seen = new Set(JSON.parse(store.get('reverse-snake-seen', '[]'))); } catch (e) {}
+const tipEl = $('#tip');
+
+const ITEM = {
+  star:     { emoji:'⭐', name:'星星',   color:'#f7c21b', short:'撿了 +10 分', desc:'+10 分。被蛇吃到，牠會變長。' },
+  shield:   { emoji:'🛡️', name:'護盾',   color:'#3d8bff', short:'蛇撞上來會被彈暈', desc:'7 秒內，蛇撞上來會被彈暈（算一次反殺）。' },
+  hourglass:{ emoji:'⏳', name:'沙漏',   color:'#a58fe0', short:'蛇變慢 5 秒', desc:'所有蛇變慢 5 秒。' },
+  ghost:    { emoji:'👻', name:'隱形',   color:'#b8c2cc', short:'蛇看不到你', desc:'4 秒內蛇看不到你，只會到處亂晃。' },
+  dash:     { emoji:'⚡', name:'衝刺',   color:'#ffcf3a', short:'你跑得更快', desc:'4 秒內你的移動速度加倍。' },
+  banana:   { emoji:'🍌', name:'香蕉皮', color:'#fff1a6', short:'丟在身後讓蛇滑倒', desc:'撿起後，下一步會丟在身後。蛇踩到會滑倒暈眩（算一次反殺）。' },
+  scissors: { emoji:'✂️', name:'剪刀',   color:'#ffb3c6', short:'蛇尾巴剪掉一半', desc:'喀嚓！每條蛇的尾巴立刻少一半。' },
+  brick:    { emoji:'🧱', name:'磚塊',   color:'#f0a479', short:'在身後砌牆擋蛇', desc:'接下來 3 步會在身後砌牆，維持 9 秒，蛇得繞路。' },
+  chili:    { emoji:'🌶️', name:'辣椒',   color:'#ff7a5c', bad:true, short:'別讓蛇吃到！', desc:'被蛇吃到會暴衝 3 秒！你搶先撿走就沒事（+5 分）。' },
+  egg:      { emoji:'🥚', name:'蛇蛋',   color:'#f6ead0', bad:true, short:'快撿走，不然會孵化', desc:'7 秒內沒撿走就會孵出一條小蛇！撿走 +5 分。' },
+  peel:     { emoji:'🍌', name:'地上的香蕉皮', color:'#fff1a6' }
+};
+const TIP_EXTRA = {
+  stairs: { emoji:'🟪', name:'傳送梯', info:true, desc:'踩上紫色格子就會到另一層樓。蛇也會用它來追你，另一頭有蛇靠近時會閃紅光。' }
+};
+const WEIGHT = { shield:3, hourglass:2, ghost:2, dash:2, banana:3, scissors:1.2, brick:2.4, chili:2.2, egg:1.8 };
+const ALL_ITEMS = ['star','shield','hourglass','ghost','dash','banana','scissors','brick','chili','egg'];
+const BASE_SNAKE = { len:5, speed0:250, speedMin:130, ramp:75000, mistake0:.3, mistakeMin:.06, growEvery:4500, itemEvery:4500 };
+
+const LEVELS = [
+  { name:'新手村', N:14, F:1, goal:{type:'survive',n:30}, items:['star','shield','hourglass'],
+    snake:{ len:4, speed0:280, speedMin:175, mistake0:.4, mistakeMin:.2, growEvery:6000 }, tip:'先熟悉一下手感，撐過 30 秒就過關。' },
+  { name:'摘星星', N:16, F:1, goal:{type:'stars',n:8}, items:['star','shield','hourglass','dash'], starFast:true,
+    snake:{ speed0:260, speedMin:155, mistake0:.35, mistakeMin:.12 }, tip:'星星會出得比較快，邊逃邊撿。' },
+  { name:'石頭迷宮', N:16, F:1, rocks:'maze', goal:{type:'survive',n:45}, items:['star','shield','banana','brick','dash'],
+    snake:{ speed0:250, speedMin:145, mistake0:.3, mistakeMin:.1 }, tip:'石頭擋你也擋蛇，善用轉角甩掉牠。' },
+  { name:'反殺！', N:16, F:1, rocks:'pillars', goal:{type:'ko',n:3}, items:['star','shield','banana','brick','hourglass','scissors'], itemEvery:2800,
+    weights:{ banana:5, shield:4 }, snake:{ speed0:240, speedMin:140, mistake0:.3, mistakeMin:.1 },
+    tip:'讓蛇暈倒 3 次：用護盾彈開牠、丟香蕉皮讓牠滑倒，或用磚塊把牠困住。' },
+  { name:'兩層樓', N:14, F:2, stairs:[[3,3,0],[10,10,0]], goal:{type:'survive',n:45}, items:['star','shield','ghost','dash','hourglass'],
+    snake:{ speed0:250, speedMin:140, mistake0:.3, mistakeMin:.1 }, tip:'踩上紫色傳送梯就能換樓層。蛇也會跟著上下樓！' },
+  { name:'蛇蛋危機', N:16, F:1, goal:{type:'stars',n:10}, items:['star','shield','egg','chili','scissors','banana','dash'], starFast:true,
+    weights:{ egg:4, chili:4 }, itemEvery:3500, snake:{ speed0:255, speedMin:145, mistake0:.32, mistakeMin:.1 },
+    tip:'蛇蛋和辣椒會一直出現，記得去搶，不然會很慘。' },
+  { name:'三層大樓', N:13, F:3, stairs:[[2,2,0],[10,10,0],[10,2,1],[2,10,1]], rocks:'few', goal:{type:'survive',n:60}, items:ALL_ITEMS,
+    snake:{ speed0:250, speedMin:135, mistake0:.3, mistakeMin:.08 }, tip:'三層樓，看小地圖掌握蛇在哪一層。' },
+  { name:'雙蛇夾擊', N:14, F:3, stairs:[[3,3,0],[10,10,0],[10,3,1],[3,10,1]], snakes:2, goal:{type:'survive',n:60}, items:ALL_ITEMS,
+    snake:{ len:4, speed0:265, speedMin:165, mistake0:.36, mistakeMin:.2 }, tip:'最終關：兩條蛇、三層樓。撐過 60 秒你就是傳說。' }
+];
+const ENDLESS = { name:'無盡模式', N:18, F:1, items:ALL_ITEMS, snake:{} };
+const VERSUS  = { name:'雙人對戰', N:16, F:1, time:60000, items:['shield','hourglass','dash','banana','brick','scissors','chili'],
+  snake:{ len:5, speed0:210, speedMin:140, ramp:60000, growEvery:4000 } };
+
+const ONLINE = Object.assign({}, VERSUS, { name:'網路對戰' });
+const NET = { ws:null, room:null, role:null, hostRole:'apple', peer:false, tally:{ host:0, guest:0 }, rheld:[], rq:null, fxOut:[], lastSent:0, status:'idle' };
+const isOnline = () => S.mode === 'online';
+const isGuest = () => S.mode === 'online' && NET.role === 'guest';
+const isNetHost = () => S.mode === 'online' && NET.role === 'host';
+const isVs = () => S.mode === 'versus' || S.mode === 'online';
+const myRole = () => NET.role === 'host' ? NET.hostRole : (NET.hostRole === 'apple' ? 'snake' : 'apple');
+
+function goalText(g) {
+  return g.type === 'survive' ? `撐過 ${g.n} 秒` : g.type === 'stars' ? `收集 ${g.n} 顆星星` : `讓蛇暈倒 ${g.n} 次`;
+}
+
+/* ================= 地圖（多樓層） ================= */
+let N = 18, F = 1, NN = N * N, G = null;
+const idx = (x, y, f) => f * NN + y * N + x;
+const cellOf = k => { const f = (k / NN) | 0, r = k % NN; return { x: r % N, y: (r / N) | 0, f }; };
+function stepCell(x, y, f, d) {
+  const nx = x + DIRS[d][0], ny = y + DIRS[d][1];
+  if (nx < 0 || ny < 0 || nx >= N || ny >= N) return null;
+  const s = G.stairs[idx(nx, ny, f)];
+  return { x: nx, y: ny, f: s >= 0 ? s : f };     // 走進傳送梯就換樓層
+}
+function makeRocks(kind) {
+  const r = [];
+  if (kind === 'maze') {
+    for (let x = 3; x <= 6; x++) { r.push([x, 4], [x, N - 5]); }
+    for (let x = N - 7; x <= N - 4; x++) { r.push([x, 4], [x, N - 5]); }
+    for (let y = 6; y <= N - 7; y++) { r.push([4, y], [N - 5, y]); }
+    const c = (N / 2) | 0; r.push([c - 1, c - 1], [c, c - 1], [c - 1, c], [c, c]);
+  } else if (kind === 'pillars') {
+    for (let x = 3; x < N - 2; x += 3) for (let y = 3; y < N - 2; y += 3) r.push([x, y]);
+  } else if (kind === 'few') {
+    const c = (N / 2) | 0; r.push([c - 2, c], [c + 2, c], [c, c - 2], [c, c + 2]);
+  }
+  return r;
+}
+function buildGeo(cfg) {
+  N = cfg.N; F = cfg.F || 1; NN = N * N;
+  G = { rocks: new Uint8Array(F * NN), stairs: new Int8Array(F * NN).fill(-1), stairList: [] };
+  for (const [x, y, f] of cfg.stairs || []) {
+    G.stairs[idx(x, y, f)] = f + 1; G.stairs[idx(x, y, f + 1)] = f; G.stairList.push({ x, y, f });
+  }
+  const rk = cfg.rocks ? makeRocks(cfg.rocks) : [];
+  for (let f = 0; f < F; f++) for (const [x, y] of rk) {
+    if (x <= 0 || y <= 0 || x >= N - 1 || y >= N - 1) continue;
+    const k = idx(x, y, f); if (G.stairs[k] >= 0) continue;
+    G.rocks[k] = 1;
+  }
+}
+
+/* ================= 遊戲狀態 ================= */
+const S = { running:false, over:false, paused:false, mode:null, snakes:[], items:[], bricks:[], gt:0 };
+const rand = n => Math.floor(Math.random() * n);
+const sameCell = (a, b) => a.x === b.x && a.y === b.y && a.f === b.f;
+const dist2 = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+const until = t => S.gt < t;
+function itemAt(c) { return S.items.find(i => sameCell(i, c)); }
+function brickAt(c) { return S.bricks.some(b => sameCell(b, c)); }
+function snakeOcc(c) { for (const sn of S.snakes) for (const b of sn.body) if (sameCell(b, c)) return sn; return null; }
+function mainSnake() { return S.snakes.find(s => s.kind !== 'baby') || S.snakes[0]; }
+function score() { return Math.floor(S.gt / 1000) + S.bonus; }
+
+function snakeParams() { return Object.assign({}, BASE_SNAKE, S.cfg.snake || {}, { itemEvery: S.cfg.itemEvery || BASE_SNAKE.itemEvery }); }
+function snakeMs(sn) {
+  const P = S.par;
+  let ms = Math.max(P.speedMin, P.speed0 - S.gt * (P.speed0 - P.speedMin) / P.ramp);
+  if (sn.kind === 'baby') ms *= 1.35;
+  if (until(sn.rageUntil)) ms *= .55;
+  if (until(S.slowUntil)) ms *= 1.8;
+  return ms;
+}
+
+function cellFree(c) {
+  return !G.rocks[idx(c.x, c.y, c.f)] && G.stairs[idx(c.x, c.y, c.f)] < 0 && !snakeOcc(c) && !brickAt(c) &&
+    !(S.player && sameCell(c, S.player));
+}
+function makeSnake(len, f, kind) {
+  const p = S.player;
+  const corners = [[0,0],[N-1,0],[0,N-1],[N-1,N-1]].map(c => ({ c, d: p.f === f ? Math.abs(c[0] - p.x) + Math.abs(c[1] - p.y) : 99 + Math.random() }));
+  corners.sort((a, b) => b.d - a.d);
+  len = Math.max(3, Math.min(N - 2, len));
+  for (const { c: [cx, cy] } of corners) {
+    const body = [];
+    for (let i = 0; i < len; i++) body.push({ x: cx === 0 ? len - 1 - i : N - len + i, y: cy, f });
+    if (!body.every(cellFree)) continue;
+    S.items = S.items.filter(it => !body.some(b => sameCell(b, it)));
+    return { id: ++S.sid, kind, body, prev: body.map(b => ({ ...b })), grow: 0, acc: 0, ms: 250,
+             stunUntil: S.gt + 700, rageUntil: 0, lost: 0, dir: cx === 0 ? 'right' : 'left', qd: [] };
+  }
+  return null;
+}
+
+function startGame(mode, li) {
+  const cfg = mode === 'level' ? LEVELS[li] : mode === 'versus' ? VERSUS : mode === 'online' ? ONLINE : ENDLESS;
+  buildGeo(cfg);
+  Object.assign(S, {
+    mode, li, cfg, idle:false, gt:0, bonus:0, over:false, paused:false, running:true, result:null, overAt:0,
+    snakes:[], items:[], bricks:[], itemId:0, sid:0, lastMoveAt:-99999, queued:null,
+    nextStarAt: 1500, nextItemAt: 5000, shieldUntil:0, ghostUntil:0, dashUntil:0, slowUntil:0,
+    peelHeld:0, bricksLeft:0, starsGot:0, kos:0, traps:0, nears:0, lastNear:-9999, tipQueue:[], tip:null
+  });
+  hideTip();
+  S.par = snakeParams();
+  S.nextGrowAt = S.par.growEvery;
+  // 玩家起點：1F 中間偏下
+  let px = (N / 2) | 0, py = Math.min(N - 3, ((N / 2) | 0) + 2);
+  S.player = null;
+  for (let r = 0; r < N; r++) {
+    let found = false;
+    for (let dx = -r; dx <= r && !found; dx++) for (let dy = -r; dy <= r && !found; dy++) {
+      const c = { x: px + dx, y: py + dy, f: 0 };
+      if (c.x < 1 || c.y < 1 || c.x >= N - 1 || c.y >= N - 1) continue;
+      if (!G.rocks[idx(c.x, c.y, 0)] && G.stairs[idx(c.x, c.y, 0)] < 0) { px = c.x; py = c.y; found = true; }
+    }
+    if (found) break;
+  }
+  S.player = { x:px, y:py, f:0, fx:px, fy:py, ff:0 };
+  const kind = mode === 'versus' || mode === 'online' ? 'human' : 'main';
+  NET.rheld = []; NET.rq = null; NET.fxOut = [];
+  const count = cfg.snakes || 1;
+  for (let i = 0; i < count; i++) {
+    const f = F > 1 ? (i === 0 ? F - 1 : Math.max(0, F - 2)) : 0;   // 蛇從樓上出發，給你一點起跑時間
+    const sn = makeSnake(S.par.len, f, kind); if (sn) { if (i) sn.stunUntil = 3500; S.snakes.push(sn); }
+  }
+  if (G.stairList.length) {   // 多樓層關卡：先介紹傳送梯
+    const st = G.stairList.slice().sort((a, b) => dist2(a, S.player) - dist2(b, S.player))[0];
+    queueTip('stairs', { x: st.x, y: st.y, f: st.f });
+  }
+  held = [];
+  hideOverlay();
+  setHudLabels();
+  if (T) buildLevel3D();
+  resize();
+}
+
+/* ---------- 尋路 ---------- */
+function buildBlocked(self) {
+  const b = G.rocks.slice();
+  for (const br of S.bricks) b[idx(br.x, br.y, br.f)] = 1;
+  for (const sn of S.snakes) {
+    const n = (sn === self && sn.grow === 0) ? sn.body.length - 1 : sn.body.length;   // 自己的尾巴會移開
+    for (let i = 0; i < n; i++) { const c = sn.body[i]; b[idx(c.x, c.y, c.f)] = 1; }
+  }
+  return b;
+}
+function neighbors(c, blocked) {
+  const out = [];
+  for (const d of DLIST) {
+    const n = stepCell(c.x, c.y, c.f, d);
+    if (!n || blocked[idx(n.x, n.y, n.f)]) continue;
+    n.d = d; out.push(n);
+  }
+  return out;
+}
+function flood(start, blocked, cap) {
+  cap = cap || 220;
+  const seen = new Uint8Array(F * NN), q = [start]; seen[idx(start.x, start.y, start.f)] = 1;
+  let n = 0;
+  while (q.length && n < cap) {
+    const c = q.pop(); n++;
+    for (const m of neighbors(c, blocked)) { const k = idx(m.x, m.y, m.f); if (!seen[k]) { seen[k] = 1; q.push(m); } }
+  }
+  return n;
+}
+function bfsFirst(h, t, blocked) {
+  const parent = new Int16Array(F * NN).fill(-1), hk = idx(h.x, h.y, h.f), tk = idx(t.x, t.y, t.f);
+  parent[hk] = hk;
+  const q = [hk]; let qi = 0;
+  while (qi < q.length) {
+    const k = q[qi++]; if (k === tk) break;
+    for (const m of neighbors(cellOf(k), blocked)) { const nk = idx(m.x, m.y, m.f); if (parent[nk] === -1) { parent[nk] = k; q.push(nk); } }
+  }
+  if (parent[tk] === -1) return null;
+  let k = tk; while (parent[k] !== hk) k = parent[k];
+  return cellOf(k);
+}
+function chooseMove(sn) {
+  const blocked = buildBlocked(sn), h = sn.body[0], P = S.player;
+  const opts = neighbors(h, blocked);
+  if (!opts.length) return null;
+  if (until(S.ghostUntil)) {                                   // 隱形：蛇看不到你，亂晃
+    const o = opts.filter(c => !sameCell(c, P));
+    if (!o.length) return 'wait';
+    const st = o.find(c => c.d === sn.dir);
+    return st && Math.random() < .7 ? st : o[rand(o.length)];
+  }
+  const mis = sn.kind === 'baby' ? .3 : Math.max(S.par.mistakeMin, S.par.mistake0 - S.gt / 1000 * .005);
+  if (Math.random() < mis) {
+    const safe = opts.filter(o => flood(o, blocked, 60) >= Math.min(sn.body.length, 6));
+    const pool = safe.length ? safe : opts;
+    return pool[rand(pool.length)];
+  }
+  const st = bfsFirst(h, P, blocked);
+  if (st) { sn.lost = 0; return opts.find(o => sameCell(o, st)) || opts[0]; }
+  if (++sn.lost >= 5) return null;                             // 一直找不到你：氣到打結
+  let best = opts[0], ba = -1;
+  for (const o of opts) { const a = flood(o, blocked); if (a > ba) { ba = a; best = o; } }
+  if (ba < Math.min(sn.body.length * .5, 10)) return null;     // 被自己或牆圍住：困住了
+  return best;
+}
+
+/* ---------- 蛇的行動 ---------- */
+function snakeStep(sn) {
+  sn.prev = sn.body.map(c => ({ ...c }));
+  if (until(sn.stunUntil)) return;
+  const h = sn.body[0];
+  let next;
+  if (sn.kind === 'human') {
+    let d = sn.dir;
+    while (sn.qd.length) { const q = sn.qd.shift(); if (q !== OPP[sn.dir] && q !== sn.dir) { d = q; break; } }
+    const c = stepCell(h.x, h.y, h.f, d), blocked = buildBlocked(sn);
+    if (!c || blocked[idx(c.x, c.y, c.f)]) { endVersus('apple', '蛇撞到東西了！'); return; }
+    next = c; next.d = d;
+  } else {
+    next = chooseMove(sn);
+    if (next === 'wait') return;
+    if (!next) { snakeTrapped(sn); return; }
+  }
+  if (sameCell(next, S.player)) {
+    if (until(S.shieldUntil)) {
+      S.shieldUntil = 0; sn.stunUntil = S.gt + 2200; sn.dir = OPP[next.d] || sn.dir;
+      knockout(sn, '護盾彈開！', S.player); return;
+    }
+    sn.body.unshift({ x:next.x, y:next.y, f:next.f }); sn.body.pop();
+    playerEaten(sn); return;
+  }
+  sn.dir = next.d || sn.dir;
+  sn.body.unshift({ x:next.x, y:next.y, f:next.f });
+  if (sn.grow > 0) sn.grow--; else sn.body.pop();
+  if (!isVs() && sn.kind !== 'human' && next.f === S.player.f && dist2(next, S.player) === 1 && S.gt - S.lastNear > 700) {
+    S.lastNear = S.gt; S.bonus += 2; S.nears++; popup('好險！+2', S.player, 'gold');
+  }
+  const it = itemAt(next);
+  if (it) {
+    S.items = S.items.filter(i => i !== it);
+    if (it.type === 'star') { sn.grow++; popup('蛇偷吃了星星！', next, 'red'); }
+    else if (it.type === 'peel') { sn.stunUntil = S.gt + 1700; knockout(sn, '蛇踩到香蕉皮滑倒！', next); }
+    else if (it.type === 'chili') { sn.rageUntil = S.gt + 3000; popup('蛇吃了辣椒，暴衝！🔥', next, 'red'); shake(); }
+    else if (it.type === 'egg') { sn.grow++; popup('蛇把蛋吃回去了', next, 'red'); }
+    else popup(ITEM[it.type].name + '被蛇吞了…', next, 'red');
+  }
+}
+function knockout(sn, text, at) {
+  if (isVs()) { popup(text, at, 'blue'); shake(); return; }
+  S.kos++; S.bonus += 15; popup(text + ' +15', at, 'blue'); shake();
+}
+function snakeTrapped(sn) {
+  const h = sn.body[0];
+  S.kos++; S.traps++; S.bonus += 30;
+  popup(sn.lost >= 5 ? '蛇找不到你，氣到打結！+30' : '蛇把自己困住了！+30', h, 'green'); shake();
+  sn.lost = 0;
+  if (sn.kind === 'baby') { S.snakes = S.snakes.filter(s => s !== sn); return; }
+  const others = S.snakes; S.snakes = S.snakes.filter(s => s !== sn);
+  const ns = makeSnake(Math.max(4, Math.floor(sn.body.length * .7)), F > 1 ? rand(F) : 0, sn.kind);
+  S.snakes = others;
+  if (ns) { sn.body = ns.body; sn.prev = ns.prev; sn.dir = ns.dir; }
+  else sn.prev = sn.body.map(c => ({ ...c }));
+  sn.grow = 0; sn.acc = 0; sn.stunUntil = S.gt + 900; sn.rageUntil = 0;
+}
+function hatch(egg) {
+  const body = [{ x:egg.x, y:egg.y, f:egg.f }];
+  const blocked = buildBlocked(null);
+  for (const b of S.bricks) blocked[idx(b.x, b.y, b.f)] = 1;
+  blocked[idx(S.player.x, S.player.y, S.player.f)] = 1;
+  blocked[idx(egg.x, egg.y, egg.f)] = 1;
+  for (let i = 0; i < 2; i++) {
+    const last = body[body.length - 1];
+    const o = DLIST.map(d => { const nx = last.x + DIRS[d][0], ny = last.y + DIRS[d][1]; return { x:nx, y:ny, f:last.f }; })
+      .filter(c => c.x >= 0 && c.y >= 0 && c.x < N && c.y < N && !blocked[idx(c.x, c.y, c.f)] && G.stairs[idx(c.x, c.y, c.f)] < 0);
+    if (!o.length) break;
+    const c = o[rand(o.length)]; blocked[idx(c.x, c.y, c.f)] = 1; body.push(c);
+  }
+  if (body.length < 2 || S.snakes.filter(s => s.kind === 'baby').length >= 2) { popup('蛇蛋破掉了', egg, 'gold'); return; }
+  const dx = body[0].x - body[1].x, dy = body[0].y - body[1].y;
+  S.snakes.push({ id: ++S.sid, kind:'baby', body, prev: body.map(b => ({ ...b })), grow:0, acc:0, ms:300,
+    stunUntil: S.gt + 500, rageUntil:0, lost:0, dir: dx > 0 ? 'right' : dx < 0 ? 'left' : dy > 0 ? 'down' : 'up', qd:[] });
+  popup('小蛇孵出來了！🐣', egg, 'red'); shake();
+}
+
+/* ---------- 道具 ---------- */
+function freeItemCell() {
+  for (let t = 0; t < 400; t++) {
+    const f = F > 1 && Math.random() > .55 ? rand(F) : S.player.f;
+    const c = { x: rand(N), y: rand(N), f };
+    if (!cellFree(c) || itemAt(c)) continue;
+    if (S.snakes.some(sn => sn.body[0].f === f && dist2(sn.body[0], c) < 4)) continue;
+    if (dist2(c, S.player) < 2 && c.f === S.player.f) continue;
+    return c;
+  }
+  return null;
+}
+function addItem(type, c, life) {
+  const it = { id: ++S.itemId, type, x:c.x, y:c.y, f:c.f, born:S.gt, life };
+  S.items.push(it);
+  if (type !== 'peel') queueTip(type, it);
+}
+function pickWeighted(pool) {
+  const w = Object.assign({}, WEIGHT, S.cfg.weights || {});
+  let tot = 0; for (const t of pool) tot += w[t] || 1;
+  let r = Math.random() * tot;
+  for (const t of pool) { r -= w[t] || 1; if (r <= 0) return t; }
+  return pool[pool.length - 1];
+}
+function spawnTick() {
+  const items = S.cfg.items;
+  if (items.includes('star') && S.gt >= S.nextStarAt) {
+    S.nextStarAt = S.gt + (S.cfg.starFast ? 1800 + Math.random() * 1600 : 3500 + Math.random() * 3000);
+    if (S.items.filter(i => i.type === 'star').length < (S.cfg.starFast ? 3 : 2)) { const c = freeItemCell(); if (c) addItem('star', c, 10000); }
+  }
+  if (S.gt >= S.nextItemAt) {
+    S.nextItemAt = S.gt + S.par.itemEvery + Math.random() * 2500;
+    const pool = items.filter(t => t !== 'star');
+    if (pool.length && S.items.filter(i => i.type !== 'star' && i.type !== 'peel').length < 3) {
+      const c = freeItemCell(); if (c) { const t = pickWeighted(pool); addItem(t, c, t === 'egg' ? 7000 : 9000); }
+    }
+  }
+  const expired = S.items.filter(it => S.gt - it.born >= it.life);
+  if (expired.length) {
+    S.items = S.items.filter(it => !expired.includes(it));
+    for (const it of expired) if (it.type === 'egg') hatch(it);
+  }
+}
+
+/* ---------- 玩家 ---------- */
+function tryMove(d) {
+  const p = S.player, dest = stepCell(p.x, p.y, p.f, d);
+  if (!dest || G.rocks[idx(dest.x, dest.y, dest.f)] || brickAt(dest) || snakeOcc(dest)) return false;
+  const leave = { x:p.x, y:p.y, f:p.f };
+  p.fx = p.x; p.fy = p.y; p.ff = p.f;
+  p.x = dest.x; p.y = dest.y; p.f = dest.f; S.lastMoveAt = S.gt;
+  if (dest.f !== leave.f) { popup(dest.f > leave.f ? `上樓到 ${dest.f + 1}F ⬆` : `下樓到 ${dest.f + 1}F ⬇`, dest, 'purple'); flash(); }
+  if (S.peelHeld > 0 && !itemAt(leave)) { addItem('peel', leave, 15000); S.peelHeld--; }
+  else if (S.bricksLeft > 0 && !itemAt(leave)) { S.bricks.push({ ...leave, until: S.gt + 9000 }); S.bricksLeft--; }
+  const it = itemAt(dest);
+  if (it && it.type !== 'peel') {
+    S.items = S.items.filter(i => i !== it);
+    pickUp(it.type, dest);
+  }
+  return true;
+}
+function pickUp(type, at) {
+  switch (type) {
+    case 'star': S.bonus += 10; S.starsGot++; popup('+10 ⭐', at, 'gold'); break;
+    case 'shield': S.shieldUntil = S.gt + 7000; popup('獲得護盾！', at, 'blue'); break;
+    case 'hourglass': S.slowUntil = S.gt + 5000; popup('蛇變慢了 ⏳', at, 'purple'); break;
+    case 'ghost': S.ghostUntil = S.gt + 4000; popup('隱形！蛇看不到你 👻', at, 'purple'); break;
+    case 'dash': S.dashUntil = S.gt + 4000; popup('衝刺！⚡', at, 'gold'); break;
+    case 'banana': S.peelHeld = Math.min(2, S.peelHeld + 1); popup('撿到香蕉皮，下一步丟出', at, 'gold'); break;
+    case 'brick': S.bricksLeft = 3; popup('磚塊：接下來 3 步砌牆', at, 'gold'); break;
+    case 'scissors':
+      for (const sn of S.snakes) {
+        const n = Math.max(3, Math.ceil(sn.body.length / 2));
+        sn.body.length = Math.min(sn.body.length, n); sn.prev.length = Math.min(sn.prev.length, n); sn.grow = 0;
+      }
+      popup('喀嚓！蛇尾巴剪掉了 ✂️', at, 'green'); shake(); break;
+    case 'chili': S.bonus += 5; popup('辣椒拆除 +5', at, 'gold'); break;
+    case 'egg': S.bonus += 5; popup('蛇蛋沒收 +5', at, 'gold'); break;
+  }
+}
+function moveCd() { return until(S.dashUntil) ? 55 : 105; }
+function processInput() {
+  if (isNetHost() && NET.hostRole === 'snake') {     // 蘋果是對手：用對手送來的方向
+    const d = NET.rq || (NET.rheld.length ? NET.rheld[NET.rheld.length - 1] : null);
+    if (!d || S.gt - S.lastMoveAt < moveCd()) return;
+    NET.rq = null; tryMove(d); return;
+  }
+  const d = S.queued || (held.length ? held[held.length - 1] : null);
+  if (!d || S.gt - S.lastMoveAt < moveCd()) return;
+  S.queued = null; tryMove(d);
+}
+
+function update(dt) {
+  S.gt += dt;
+  processInput();
+  if (S.gt >= S.nextGrowAt) { S.nextGrowAt += S.par.growEvery; for (const sn of S.snakes) if (sn.kind !== 'baby') sn.grow++; }
+  spawnTick();
+  S.bricks = S.bricks.filter(b => b.until > S.gt);
+  for (const sn of S.snakes.slice()) {
+    if (!S.snakes.includes(sn)) continue;
+    sn.ms = snakeMs(sn); sn.acc += dt;
+    while (sn.acc >= sn.ms && !S.over && S.snakes.includes(sn)) { sn.acc -= sn.ms; snakeStep(sn); }
+    if (S.over) break;
+  }
+  if (!S.over) checkGoal();
+}
+function checkGoal() {
+  if (S.mode === 'level') {
+    const g = S.cfg.goal;
+    const done = g.type === 'survive' ? S.gt >= g.n * 1000 : g.type === 'stars' ? S.starsGot >= g.n : S.kos >= g.n;
+    if (done) winLevel();
+  } else if (isVs() && S.gt >= S.cfg.time) endVersus('apple', '時間到！蘋果撐住了');
+}
+
+/* ================= 結果與選單 ================= */
+const QUIPS = ['喀滋，好脆。', '蛇：謝謝招待。', '一天一蘋果，蛇也不用看醫生。', '你成為了蛇的一部分。', '下次往空曠的地方跑！'];
+function finish(result) {
+  S.over = true; S.result = result; S.overAt = performance.now(); held = [];
+}
+function playerEaten(sn) {
+  S.eater = sn; shake();
+  if (isVs()) return endVersus('snake', '蛇咬到蘋果了！');
+  finish('lose');
+  if (S.mode === 'endless') {
+    const sc = score(); let rec = false;
+    if (sc > bestScore) { bestScore = sc; rec = true; store.set('reverse-snake-best', sc); }
+    later(() => showOverlay('endlessOver', { sc, rec }));
+  } else later(() => showOverlay('levelFail'));
+}
+function winLevel() {
+  finish('win');
+  if (S.li + 1 > cleared) { cleared = S.li + 1; store.set('reverse-snake-cleared', cleared); }
+  popup('過關！🎉', S.player, 'green');
+  later(() => showOverlay('levelWin'), 600);
+}
+function endVersus(winner, why) {
+  if (S.over || isGuest()) return;          // 連線時只有房主能判定勝負
+  if (isOnline()) {
+    finish(winner); shake();
+    NET.tally[winner === NET.hostRole ? 'host' : 'guest']++;
+    netSend({ k:'end', winner, why, tally:NET.tally, snap:makeSnap() });
+    later(() => showOverlay('onlineOver', { winner, why }), 700);
+    return;
+  }
+  finish(winner); vsTally[winner]++; shake();
+  later(() => showOverlay('versusOver', { winner, why }), 700);
+}
+function later(fn, ms) { const token = S.gt + ':' + S.mode; setTimeout(() => { if (S.over && S.gt + ':' + S.mode === token) fn(); }, ms || 750); }
+
+function hideOverlay() { overlay.classList.add('hide'); overlay.innerHTML = ''; }
+function levelCardsHtml() {
+  return LEVELS.map((L, i) => {
+    const locked = i > cleared, done = i < cleared;
+    return `<button data-act="intro" data-i="${i}" class="${locked ? 'locked' : ''} ${done ? 'done' : ''}" ${locked ? 'disabled' : ''}>
+      <span class="n">第 ${i + 1} 關 ${done ? '✓' : locked ? '🔒' : ''}</span>${L.name}<small>${goalText(L.goal)}${L.F > 1 ? `・${L.F} 層樓` : ''}${L.snakes > 1 ? '・2 條蛇' : ''}</small></button>`;
+  }).join('');
+}
+function guideHtml() {
+  const row = t => `<div class="${ITEM[t].bad ? 'bad' : ''}"><span class="e">${ITEM[t].emoji}</span><span><b>${ITEM[t].name}</b>：${ITEM[t].desc}</span></div>`;
+  return `<div class="guide"><h3>好道具</h3>${['star','shield','hourglass','ghost','dash','banana','scissors','brick'].map(row).join('')}
+    <h3>壞道具（搶先撿走！）</h3>${['chili','egg'].map(row).join('')}
+    <h3>其他</h3>
+    <div><span class="e">🟪</span><span><b>傳送梯</b>：紫色格子，踩上去就到另一層樓。發紅光代表另一頭有蛇靠近。</span></div>
+    <div><span class="e">🪨</span><span><b>石頭</b>：你和蛇都過不去。</span></div>
+    <div><span class="e">😱</span><span><b>擦身而過</b>：蛇頭剛好在你旁邊而你沒事，+2 分。</span></div>
+    <div><span class="e">🌀</span><span><b>打結</b>：蛇被自己困住或一直找不到你，會氣到打結 +30 分（也算反殺）。</span></div></div>`;
+}
+function showOverlay(kind, d) {
+  d = d || {};
+  let h = '';
+  const homeBtn = '<button class="btn sec" data-act="home">主選單</button>';
+  if (kind === 'home') {
+    h = `<div class="panel wide home"><div class="big">🍎🐍</div><h2>反向貪食蛇</h2><p>這次，你是那顆蘋果。</p>
+      <div class="menu">
+        <button data-act="levels" data-primary>🏁 關卡模式<small>8 關：存活、收集、反殺，還有多層樓。已過 ${cleared}/8 關</small></button>
+        <button data-act="endless">♾️ 無盡模式<small>撐越久分數越高・最高分 ${bestScore}</small></button>
+        <button data-act="versus">⚔️ 雙人對戰<small>同一台鍵盤，一人當蘋果、一人當蛇${isTouch ? '（需要實體鍵盤）' : ''}</small></button>
+        <button data-act="online">🌐 網路對戰<small>各用各的電腦或手機，輸入房號連線對戰</small></button>
+        <button data-act="guide">📖 道具圖鑑<small>10 種道具、傳送梯和加分規則</small></button>
+      </div>
+      <div class="hint">${isTouch ? '在畫面上滑動，或按住下方方向鍵移動' : '方向鍵 / WASD 移動・空白鍵暫停・按 2 或 3 切換視角'}</div></div>`;
+  } else if (kind === 'levels') {
+    h = `<div class="panel wide"><h2>🏁 選擇關卡</h2><div class="lv">${levelCardsHtml()}</div>${homeBtn}</div>`;
+  } else if (kind === 'guide') {
+    h = `<div class="panel wide"><h2>📖 道具圖鑑</h2><p style="font-size:13px">每種道具第一次出現時，遊戲會暫停並介紹它。</p>${guideHtml()}<div class="btnrow"><button class="btn" data-act="home" data-primary>知道了</button><button class="btn sec" data-act="resetTips">重新顯示新手提示</button></div></div>`;
+  } else if (kind === 'intro') {
+    const L = LEVELS[d.i];
+    h = `<div class="panel"><div class="big">${L.F > 1 ? '🏢' : L.goal.type === 'ko' ? '💫' : L.goal.type === 'stars' ? '⭐' : '⏱️'}</div>
+      <h2>第 ${d.i + 1} 關：${L.name}</h2><p><b>目標：${goalText(L.goal)}</b></p><p>${L.tip}</p>
+      <p style="font-size:13px;font-weight:700;margin-bottom:2px">這關會出現的道具</p><div class="itemlist">${L.items.map(t => `<span class="${ITEM[t].bad ? 'bad' : ''}">${ITEM[t].emoji} ${ITEM[t].name}<small>${ITEM[t].short}</small></span>`).join('')}</div>
+      <div class="btnrow"><button class="btn" data-act="play" data-i="${d.i}" data-primary>開始</button><button class="btn sec" data-act="levels">返回</button></div></div>`;
+  } else if (kind === 'versusIntro') {
+    h = `<div class="panel"><div class="big">🍎⚔️🐍</div><h2>雙人對戰</h2>
+      <ul><li>🍎 蘋果：<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></li><li>🐍 蛇：<kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd>（會一直往前爬）</li>
+      <li>蛇咬到蘋果 → 蛇贏</li><li>撐過 60 秒，或蛇撞到牆、磚塊、自己 → 蘋果贏</li><li>道具兩邊都能用，蛇吃到辣椒會暴衝</li></ul>
+      ${isTouch ? '<p class="rec">這個模式需要實體鍵盤喔</p>' : '<p class="hint" style="margin-top:0">開著中文輸入法也能玩。按鍵沒反應的話，先點一下遊戲畫面。</p>'}
+      <p style="font-size:13px">目前戰績：🍎 ${vsTally.apple} : ${vsTally.snake} 🐍</p>
+      <div class="btnrow"><button class="btn" data-act="playVersus" data-primary>開戰</button>${homeBtn}</div></div>`;
+  } else if (kind === 'pause') {
+    h = `<div class="panel"><div class="big">⏸️</div><h2>暫停中</h2><p>蛇也在原地等你。</p>
+      <div class="btnrow"><button class="btn" data-act="resume" data-primary>繼續</button><button class="btn sec" data-act="restart">重新開始</button>${homeBtn}</div></div>`;
+  } else if (kind === 'endlessOver') {
+    h = `<div class="panel"><div class="big">🐍</div><h2>被吃掉了！</h2><p>${QUIPS[rand(QUIPS.length)]}</p>
+      <p>你撐了 <b>${(S.gt / 1000).toFixed(1)} 秒</b>，拿到 <b>${d.sc} 分</b>${S.kos ? `<br>反殺蛇 ${S.kos} 次` : ''}${S.nears ? `<br>和蛇頭擦身而過 ${S.nears} 次` : ''}</p>
+      ${d.rec ? '<p class="rec">🎉 新紀錄！</p>' : `<p>最高分：${bestScore}</p>`}
+      <div class="btnrow"><button class="btn" data-act="restart" data-primary>再逃一次</button>${homeBtn}</div></div>`;
+  } else if (kind === 'levelFail') {
+    const g = S.cfg.goal;
+    const prog = g.type === 'survive' ? `撐了 ${(S.gt / 1000).toFixed(1)} / ${g.n} 秒` : g.type === 'stars' ? `收集了 ${S.starsGot} / ${g.n} 顆星` : `反殺了 ${S.kos} / ${g.n} 次`;
+    h = `<div class="panel"><div class="big">🐍</div><h2>被吃掉了！</h2><p>${QUIPS[rand(QUIPS.length)]}</p><p>第 ${S.li + 1} 關「${S.cfg.name}」：${prog}</p>
+      <div class="btnrow"><button class="btn" data-act="restart" data-primary>再試一次</button><button class="btn sec" data-act="levels">選關卡</button></div></div>`;
+  } else if (kind === 'levelWin') {
+    const last = S.li === LEVELS.length - 1;
+    h = `<div class="panel"><div class="big">${last ? '🏆' : '🎉'}</div><h2>${last ? '全部破關！你是傳說中的蘋果' : `第 ${S.li + 1} 關過關！`}</h2>
+      <p>用時 ${(S.gt / 1000).toFixed(1)} 秒${S.kos ? `・反殺 ${S.kos} 次` : ''}${S.starsGot ? `・星星 ${S.starsGot} 顆` : ''}</p>
+      <div class="btnrow">${last ? `<button class="btn" data-act="endless" data-primary>去挑戰無盡模式</button>` : `<button class="btn" data-act="intro" data-i="${S.li + 1}" data-primary>下一關</button>`}
+      <button class="btn sec" data-act="levels">選關卡</button></div></div>`;
+  } else if (kind === 'versusOver') {
+    const a = d.winner === 'apple';
+    h = `<div class="panel"><div class="big">${a ? '🍎' : '🐍'}</div><h2>${a ? '蘋果獲勝！' : '蛇獲勝！'}</h2><p>${d.why}</p>
+      <p style="font-size:18px;font-weight:900">🍎 ${vsTally.apple} : ${vsTally.snake} 🐍</p>
+      <div class="btnrow"><button class="btn" data-act="playVersus" data-primary>再來一局</button>${homeBtn}</div></div>`;
+  }
+  else if (kind === 'onlineLobby') h = onlineLobbyHtml(d);
+  else if (kind === 'onlineRoom') h = onlineRoomHtml(d);
+  else if (kind === 'onlineOver') h = onlineOverHtml(d);
+  S.overlayKind = kind;
+  overlay.innerHTML = h;
+  const ri = overlay.querySelector('#roomInput');
+  if (ri) {
+    ri.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); overlay.querySelector('[data-act="netJoin"]').click(); } });
+    if (!isTouch) setTimeout(() => ri.focus(), 0);
+  }
+  overlay.classList.remove('hide');
+  overlay.scrollTop = 0;
+}
+function idle() {   // 選單背景：換回一個安靜的棋盤
+  if (S.idle) return;
+  startGame('endless'); S.running = false; S.idle = true;
+}
+function goHome() { idle(); showOverlay('home'); }
+overlay.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
+  const a = b.dataset.act, i = +b.dataset.i;
+  if (a === 'home') goHome();
+  else if (a === 'levels') { idle(); showOverlay('levels'); }
+  else if (a === 'guide') showOverlay('guide');
+  else if (a === 'intro') { idle(); showOverlay('intro', { i }); }
+  else if (a === 'play') startGame('level', i);
+  else if (a === 'endless') startGame('endless');
+  else if (a === 'versus') { idle(); showOverlay('versusIntro'); }
+  else if (a === 'playVersus') startGame('versus');
+  else if (a === 'resume') togglePause();
+  else if (a === 'restart') startGame(S.mode, S.li);
+  else if (a === 'online') { idle(); openLobby(); }
+  else if (a === 'netCreate') netConnect(() => netRaw({ t:'create' }));
+  else if (a === 'netJoin') {
+    const code = (overlay.querySelector('#roomInput').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (code.length !== 4) { showOverlay('onlineLobby', { msg:'房號是 4 個英文或數字' }); return; }
+    netConnect(() => netRaw({ t:'join', room:code }));
+  }
+  else if (a === 'roleApple' || a === 'roleSnake') { NET.hostRole = a === 'roleApple' ? 'apple' : 'snake'; sendLobby(); showOverlay('onlineRoom'); }
+  else if (a === 'netStart') hostStart();
+  else if (a === 'netSwap') { NET.hostRole = NET.hostRole === 'apple' ? 'snake' : 'apple'; idle(); sendLobby(); showOverlay('onlineRoom'); }
+  else if (a === 'netLeave') { netRaw({ t:'leave' }); NET.room = null; NET.role = null; NET.peer = false; idle(); showOverlay('onlineLobby'); }
+  else if (a === 'resetTips') { seen.clear(); store.set('reverse-snake-seen', '[]'); b.textContent = '已重設 ✓'; }
+});
+$('#title').addEventListener('click', () => { if (S.running && !S.over) { if (!S.paused) togglePause(); } else goHome(); });
+function togglePause() {
+  if (S.tip) { dismissTip(); return; }
+  if (!S.running || S.over || isOnline()) return;
+  S.paused = !S.paused;
+  if (S.paused) showOverlay('pause'); else hideOverlay();
+}
+
+/* ================= 新手道具提示 ================= */
+function tipInfo(type) { return TIP_EXTRA[type] || ITEM[type]; }
+function queueTip(type, at) {
+  if (S.idle || isOnline() || seen.has(type) || (S.tip && S.tip.type === type) || S.tipQueue.some(q => q.type === type)) return;
+  S.tipQueue.push({ type, at });
+}
+function showTip(q) {
+  const it = tipInfo(q.type);
+  S.tip = q; S.paused = true; held = [];
+  const tag = it.info ? '<span class="tag info">地圖機關</span>' : it.bad ? '<span class="tag bad">壞道具：搶先撿走！</span>' : '<span class="tag">新道具</span>';
+  const where = q.type === 'stairs' ? '' : (q.at.f !== S.player.f ? `（在 ${q.at.f + 1}F）` : '（看發亮的那格）');
+  tipEl.innerHTML = `<div class="row"><div class="e">${it.emoji}</div><div>${tag}<br><b>${it.name}</b> <span style="font-size:12px;opacity:.6">${where}</span><p>${it.desc}</p></div></div>
+    <button class="go" data-tip>知道了，繼續${isTouch ? '' : '（空白鍵）'}</button>`;
+  const p = toScreen(q.at);
+  tipEl.classList.toggle('top', p.y > 52);
+  tipEl.classList.add('show');
+}
+function hideTip() { tipEl.classList.remove('show'); }
+function dismissTip() {
+  if (!S.tip) return;
+  seen.add(S.tip.type); store.set('reverse-snake-seen', JSON.stringify([...seen]));
+  S.tip = null; hideTip();
+  if (!S.over) S.paused = false;
+}
+tipEl.addEventListener('click', e => { if (e.target.closest('[data-tip]')) dismissTip(); });
+
+/* ================= 網路對戰（WebSocket） ================= */
+// 架構：房主的瀏覽器負責跑遊戲邏輯，每 50ms 把完整狀態送給對手；對手只送「按了哪個方向」。
+// 伺服器只負責房間和轉送訊息，不看遊戲內容。
+function wsUrl() { return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws'; }
+function netRaw(o) { if (NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(o)); }
+function netSend(o) { if (NET.room) netRaw({ t:'relay', d:o }); }
+function openLobby() {
+  if (location.protocol === 'file:' || !location.host) { NET.status = 'nohost'; showOverlay('onlineLobby'); return; }
+  if (NET.room) { showOverlay('onlineRoom'); return; }
+  netConnect(() => showOverlay('onlineLobby'));
+}
+function netConnect(then) {
+  if (location.protocol === 'file:' || !location.host) { NET.status = 'nohost'; showOverlay('onlineLobby'); return; }
+  if (NET.ws && NET.ws.readyState === 1) { then(); return; }
+  if (NET.ws && NET.ws.readyState === 0) return;
+  let ws;
+  try { ws = new WebSocket(wsUrl()); } catch (e) { NET.status = 'fail'; showOverlay('onlineLobby'); return; }
+  NET.ws = ws; NET.status = 'connecting'; showOverlay('onlineLobby');
+  const timer = setTimeout(() => { if (ws.readyState !== 1) { try { ws.close(); } catch (e) {} } }, 8000);
+  ws.onopen = () => { clearTimeout(timer); NET.status = 'ok'; then(); };
+  ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (_) { return; } onNet(m); };
+  ws.onclose = () => {
+    clearTimeout(timer);
+    if (NET.ws !== ws) return;
+    const wasInRoom = !!NET.room;
+    NET.ws = null; NET.room = null; NET.role = null; NET.peer = false;
+    NET.status = NET.status === 'ok' ? 'closed' : 'fail';
+    if (isOnline() || (S.overlayKind || '').startsWith('online')) {
+      idle(); showOverlay('onlineLobby', { msg: wasInRoom ? '和伺服器的連線中斷了' : '' });
+    }
+  };
+}
+function sendLobby() { if (NET.role === 'host') netSend({ k:'lobby', hostRole:NET.hostRole, tally:NET.tally }); }
+function hostStart() {
+  if (NET.role !== 'host' || !NET.peer) return;
+  startGame('online');
+  netSend({ k:'start', hostRole:NET.hostRole });
+  popup('開始！', S.player, 'green');
+}
+function makeSnap() {
+  return {
+    gt: S.gt, p: { x:S.player.x, y:S.player.y, f:S.player.f, fx:S.player.fx, fy:S.player.fy, ff:S.player.ff }, lm: S.lastMoveAt,
+    sn: S.snakes.map(s => ({ id:s.id, kind:s.kind, body:s.body, prev:s.prev, acc:s.acc, ms:s.ms, dir:s.dir, st:s.stunUntil, rg:s.rageUntil })),
+    it: S.items, br: S.bricks,
+    e: [S.shieldUntil, S.ghostUntil, S.dashUntil, S.slowUntil, S.peelHeld, S.bricksLeft],
+    fx: NET.fxOut.splice(0)
+  };
+}
+function applySnap(s) {
+  if (!s) return;
+  S.gt = s.gt; Object.assign(S.player, s.p); S.lastMoveAt = s.lm;
+  S.snakes = s.sn.map(o => ({ id:o.id, kind:o.kind, body:o.body, prev:o.prev, acc:o.acc, ms:o.ms, dir:o.dir, stunUntil:o.st, rageUntil:o.rg, qd:[], grow:0, lost:0 }));
+  S.items = s.it; S.bricks = s.br;
+  [S.shieldUntil, S.ghostUntil, S.dashUntil, S.slowUntil, S.peelHeld, S.bricksLeft] = s.e;
+  for (const f of s.fx || []) { if (f.sh) shake(); else popup(f.text, f, f.cls); }
+}
+function guestTick(dt) {   // 兩次狀態之間，自己先把動畫往前推，畫面才會順
+  if (!S.running) return;
+  if (!S.over) { S.gt += dt; for (const sn of S.snakes) sn.acc = Math.min(sn.ms, sn.acc + dt); }
+  else if (S.eater && S.eater.acc < S.eater.ms) S.eater.acc = Math.min(S.eater.ms, S.eater.acc + dt);
+}
+function onNet(m) {
+  switch (m.t) {
+    case 'created':
+      Object.assign(NET, { room:m.room, role:'host', peer:false, tally:{ host:0, guest:0 }, hostRole:'apple' });
+      showOverlay('onlineRoom'); break;
+    case 'joined':
+      Object.assign(NET, { room:m.room, role:'guest', peer:true, tally:{ host:0, guest:0 } });
+      showOverlay('onlineRoom'); break;
+    case 'peer-joined':
+      NET.peer = true; NET.tally = { host:0, guest:0 }; sendLobby();
+      if (!isOnline() || !S.running || S.over) showOverlay('onlineRoom'); break;
+    case 'peer-left':
+      NET.peer = false;
+      if (isOnline()) idle();
+      showOverlay('onlineRoom', { msg:'對手離開了，等新的對手加入…' }); break;
+    case 'room-closed':
+      NET.room = null; NET.role = null; NET.peer = false;
+      idle(); showOverlay('onlineLobby', { msg:'房主離開了，房間已關閉' }); break;
+    case 'error': showOverlay('onlineLobby', { msg:m.msg }); break;
+    case 'relay': onRelay(m.d || {}); break;
+  }
+}
+function onRelay(d) {
+  if (NET.role === 'guest') {
+    if (d.k === 'lobby') {
+      NET.hostRole = d.hostRole === 'snake' ? 'snake' : 'apple'; NET.tally = d.tally || NET.tally;
+      if (!isOnline() || !S.running || S.over) { if (isOnline()) idle(); showOverlay('onlineRoom'); }
+    } else if (d.k === 'start') {
+      NET.hostRole = d.hostRole === 'snake' ? 'snake' : 'apple';
+      startGame('online'); popup('開始！', S.player, 'green');
+    } else if (d.k === 'snap') {
+      if (!isOnline() || !S.running) startGame('online');
+      if (!S.over) applySnap(d.s);
+    } else if (d.k === 'end') {
+      if (!isOnline()) startGame('online');
+      applySnap(d.snap); NET.tally = d.tally || NET.tally;
+      finish(d.winner); S.eater = S.snakes[0]; shake();
+      later(() => showOverlay('onlineOver', { winner:d.winner, why:d.why }), 700);
+    }
+  } else if (NET.role === 'host' && d.k === 'in' && isOnline() && S.running && !S.over && DIRS[d.d]) {
+    if (NET.hostRole === 'snake') {      // 對手是蘋果
+      if (d.down) { if (!NET.rheld.includes(d.d)) NET.rheld.push(d.d); NET.rq = d.d; }
+      else NET.rheld = NET.rheld.filter(x => x !== d.d);
+    } else if (d.down) { const sn = S.snakes[0]; if (sn && sn.qd.length < 3) sn.qd.push(d.d); }
+  }
+}
+const roleName = r => r === 'apple' ? '🍎 蘋果' : '🐍 蛇';
+function onlineLobbyHtml(d) {
+  const st = NET.status;
+  const msg = d.msg ? `<p class="rec">${d.msg}</p>` : '';
+  if (st === 'nohost') return `<div class="panel"><div class="big">🌐</div><h2>網路對戰</h2>
+    <p>網路對戰要從遊戲伺服器的網址開啟，例如 <b>http://localhost:3000</b>。</p><p style="font-size:13px">目前這個頁面不是從伺服器開的，所以連不上。請先執行 <kbd>npm start</kbd>，再用瀏覽器打開它顯示的網址。</p>
+    <button class="btn sec" data-act="home" data-primary>主選單</button></div>`;
+  const status = st === 'connecting' ? '<p>連線到伺服器中…</p>' : (st === 'fail' || st === 'closed') ? '<p class="rec">連不到遊戲伺服器，請確認伺服器有開著。</p>' : '';
+  return `<div class="panel"><div class="big">🌐</div><h2>網路對戰</h2>${msg}${status}
+    <p>一個人建立房間，把房號告訴對手，對手輸入房號加入。</p>
+    <div class="btnrow"><button class="btn" data-act="netCreate" data-primary>建立房間</button></div>
+    <div class="joinrow"><input id="roomInput" maxlength="4" placeholder="房號" autocomplete="off" autocapitalize="characters" spellcheck="false"><button class="btn sec" data-act="netJoin">加入</button></div>
+    <button class="btn sec" data-act="home">主選單</button></div>`;
+}
+function onlineRoomHtml(d) {
+  const host = NET.role === 'host', mine = myRole(), theirs = mine === 'apple' ? 'snake' : 'apple';
+  const msg = d.msg ? `<p class="rec">${d.msg}</p>` : '';
+  const me = host ? NET.tally.host : NET.tally.guest, op = host ? NET.tally.guest : NET.tally.host;
+  const players = `<div class="players"><div><span>你（${host ? '房主' : '訪客'}）</span><b>${roleName(mine)}</b></div>
+    <div class="${NET.peer ? '' : 'wait'}"><span>對手</span><b>${NET.peer ? roleName(theirs) : '等待加入中…'}</b></div></div>`;
+  const ctrl = host
+    ? `<div class="rolepick"><button data-act="roleApple" class="${NET.hostRole === 'apple' ? 'on' : ''}">我當 🍎</button><button data-act="roleSnake" class="${NET.hostRole === 'snake' ? 'on' : ''}">我當 🐍</button></div>
+       <div class="btnrow"><button class="btn" data-act="netStart" data-primary ${NET.peer ? '' : 'disabled'}>開始對戰</button><button class="btn sec" data-act="netLeave">離開房間</button></div>`
+    : `<p>等房主開始…</p><div class="btnrow"><button class="btn sec" data-act="netLeave">離開房間</button></div>`;
+  return `<div class="panel"><div class="big">🌐</div><h2>房間</h2>${msg}
+    <div class="roomcode">${NET.room || '----'}</div>
+    ${host && !NET.peer ? '<p style="font-size:13px">把這組房號告訴對手，對手在「網路對戰」輸入它就能加入。</p>' : ''}
+    ${players}${NET.peer && (me || op) ? `<p style="font-weight:900">戰績　你 ${me} : ${op} 對手</p>` : ''}
+    <p style="font-size:12.5px;opacity:.75">蛇咬到蘋果就是蛇贏；撐過 60 秒，或蛇撞到牆、磚塊、自己，就是蘋果贏。<br>兩邊都用方向鍵或 WASD 操作自己的角色，手機也能玩。</p>${ctrl}</div>`;
+}
+function onlineOverHtml(d) {
+  const win = d.winner === myRole(), host = NET.role === 'host';
+  const me = host ? NET.tally.host : NET.tally.guest, op = host ? NET.tally.guest : NET.tally.host;
+  return `<div class="panel"><div class="big">${win ? '🎉' : (myRole() === 'apple' ? '🍎' : '🐍')}</div><h2>${win ? '你贏了！' : '你輸了…'}</h2><p>${d.why}</p>
+    <p style="font-size:18px;font-weight:900">你 ${me} : ${op} 對手</p>
+    ${host ? `<div class="btnrow"><button class="btn" data-act="netStart" data-primary>再來一局</button><button class="btn sec" data-act="netSwap">交換角色</button></div>`
+           : '<p>等房主開下一局…</p>'}
+    <div class="btnrow" style="margin-top:8px"><button class="btn sec" data-act="netLeave">離開房間</button></div></div>`;
+}
+
+/* ================= 畫面工具 ================= */
+function shake() { if (isNetHost()) NET.fxOut.push({ sh:1 }); stage.classList.remove('shake'); void stage.offsetWidth; stage.classList.add('shake'); }
+function flash() { stage.classList.remove('flash'); void stage.offsetWidth; stage.classList.add('flash'); }
+const W3 = (gx, gy) => ({ x: gx - N / 2 + .5, z: gy - N / 2 + .5 });
+function toScreen(c) {
+  if (view === '3d' && T) {
+    const w = W3(c.x, c.y), v = new THREE.Vector3(w.x, c.f * FH + 1.1, w.z).project(T.camera);
+    return { x: (v.x + 1) * 50, y: (1 - v.y) * 50 };
+  }
+  return { x: (c.x + .5) / N * 100, y: (c.y + .5) / N * 100 };
+}
+function popup(text, c, cls) {
+  if (isNetHost()) NET.fxOut.push({ text, x:c.x, y:c.y, f:c.f, cls });
+  const p = toScreen(c), el = document.createElement('div');
+  el.className = 'popup ' + (cls || '');
+  el.textContent = text;
+  el.style.left = Math.min(82, Math.max(18, p.x)) + '%';
+  el.style.top = Math.min(92, Math.max(8, p.y)) + '%';
+  stage.appendChild(el);
+  setTimeout(() => el.remove(), 1300);
+}
+function snakePts(sn) {
+  const a = Math.min(1, sn.acc / (sn.ms || 1)), out = [];
+  for (let i = 0; i < sn.body.length; i++) {
+    const f = sn.prev[Math.min(i, sn.prev.length - 1)] || sn.body[i], t = sn.body[i];
+    // 換樓層時不在平面上滑動太遠：x、y 照常插值，樓層也插值
+    out.push({ x: f.x + (t.x - f.x) * a, y: f.y + (t.y - f.y) * a, f: f.f + (t.f - f.f) * a });
+  }
+  return out;
+}
+function playerPos() {
+  const p = S.player, k = Math.min(1, Math.max(0, (S.gt - S.lastMoveAt) / TWEEN)), e = 1 - (1 - k) * (1 - k);
+  return { x: p.fx + (p.x - p.fx) * e, y: p.fy + (p.y - p.fy) * e, f: p.ff + (p.f - p.ff) * e, k };
+}
+function headDir(sn) { const s = sn.body; return s.length > 1 ? [s[0].x - s[1].x, s[0].y - s[1].y] : [DIRS[sn.dir][0], DIRS[sn.dir][1]]; }
+function inDanger() {
+  if (!S.running || S.over || until(S.ghostUntil) || isVs()) return false;
+  return S.snakes.some(sn => sn.body[0].f === S.player.f && dist2(sn.body[0], S.player) <= 3);
+}
+function appleScale(now) { return S.over && S.result !== 'win' && S.result !== 'apple' ? Math.max(0, 1 - (now - S.overAt - 100) / 300) : 1; }
+function hexToRgb(h) { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+function mixRgb(a, b, t) { const A = hexToRgb(a), B = hexToRgb(b); return A.map((v, i) => Math.round(v + (B[i] - v) * t)); }
+const rgbStr = c => `rgb(${c[0]},${c[1]},${c[2]})`;
+const PAL = {
+  main:  { a:'#3f9a4a', b:'#8fd06b', line:'#1d4a24', head:'#2f7d3a', w:1 },
+  baby:  { a:'#8fb82e', b:'#d6ec8a', line:'#4d6b12', head:'#7ea82a', w:.8 },
+  human: { a:'#6d45c9', b:'#bba2ff', line:'#3b2380', head:'#5a35b5', w:1 }
+};
+function snakeColor(sn, t) {
+  const p = PAL[sn.kind];
+  let c = mixRgb(p.a, p.b, t);
+  if (until(sn.rageUntil)) c = c.map((v, i) => Math.round(v + ([224, 51, 47][i] - v) * .6));
+  else if (until(S.slowUntil)) c = c.map((v, i) => Math.round(v + ([91, 141, 239][i] - v) * .45));
+  return c;
+}
+const FLOOR_PAL = [['#d0e7b2', '#c3dda2'], ['#d3e6f0', '#c2d8e6'], ['#f2e2c6', '#e8d4b2']];
+
+/* 道具圖示（2D 與 3D 共用） */
+const TOK = {};
+function tokenCanvas(type) {
+  if (TOK[type]) return TOK[type];
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d'), it = ITEM[type];
+  if (type !== 'peel') {
+    g.beginPath(); g.arc(64, 64, 55, 0, TAU); g.fillStyle = it.color; g.fill();
+    g.lineWidth = 8; g.strokeStyle = it.bad ? '#b3261e' : '#2b2a26'; g.stroke();
+    g.beginPath(); g.arc(64, 64, 45, 0, TAU); g.lineWidth = 4; g.strokeStyle = 'rgba(255,255,255,.65)'; g.stroke();
+  }
+  g.font = `${type === 'peel' ? 86 : 62}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(it.emoji, 64, type === 'peel' ? 68 : 70);
+  if (it.bad) {
+    g.beginPath(); g.arc(103, 25, 19, 0, TAU); g.fillStyle = '#e0332f'; g.fill(); g.lineWidth = 4; g.strokeStyle = '#fff'; g.stroke();
+    g.fillStyle = '#fff'; g.font = 'bold 28px sans-serif'; g.fillText('!', 103, 27);
+  }
+  return (TOK[type] = c);
+}
+function stairWarn(st, fFrom) {   // 傳送梯另一頭有蛇靠近？
+  const other = G.stairs[idx(st.x, st.y, fFrom)];
+  return S.snakes.some(sn => sn.body[0].f === other && Math.abs(sn.body[0].x - st.x) + Math.abs(sn.body[0].y - st.y) <= 3);
+}
+
+/* ================= 2D 繪圖 ================= */
+function starPath(c, R, r, rot, flipY) {
+  for (let i = 0; i < 10; i++) {
+    const a = rot - Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r : R;
+    const x = Math.cos(a) * rr, y = Math.sin(a) * rr * (flipY ? -1 : 1);
+    i ? c.lineTo(x, y) : c.moveTo(x, y);
+  }
+  c.closePath();
+}
+function rrect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+function drawApple2D(cx, cy, r, now, k) {
+  const danger = inDanger(), sc = appleScale(now);
+  if (sc <= 0) return;
+  const ghost = until(S.ghostUntil), gl = S.ghostUntil - S.gt;
+  ctx.save(); ctx.translate(cx, cy);
+  if (ghost) ctx.globalAlpha = gl < 1200 && Math.floor(now / 110) % 2 ? .7 : .35;
+  ctx.fillStyle = 'rgba(0,0,0,.16)';
+  ctx.beginPath(); ctx.ellipse(0, r * .9, r * .8 * sc, r * .24 * sc, 0, 0, TAU); ctx.fill();
+  const hop = k < 1 ? Math.sin(Math.PI * k) : 0;
+  ctx.translate(0, -hop * r * .35);
+  ctx.scale(sc * (1 + hop * .08), sc * (1 - hop * .08));
+  if (danger) ctx.translate(Math.sin(now / 25) * r * .05, 0);
+  if (until(S.dashUntil)) {
+    ctx.strokeStyle = 'rgba(255,190,0,.8)'; ctx.lineWidth = r * .12; ctx.lineCap = 'round';
+    for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(-r * 1.25, i * r * .35); ctx.lineTo(-r * 1.7 - Math.sin(now / 60 + i) * r * .2, i * r * .35); ctx.stroke(); }
+  }
+  const g = ctx.createRadialGradient(-r * .35, -r * .35, r * .1, 0, 0, r * 1.1);
+  g.addColorStop(0, '#ff7d6e'); g.addColorStop(1, '#c41f1b');
+  ctx.fillStyle = g; ctx.strokeStyle = '#6e110e'; ctx.lineWidth = r * .1;
+  ctx.beginPath(); ctx.ellipse(0, r * .05, r, r * .92, 0, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = '#5a3a1c'; ctx.lineWidth = r * .14; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(0, -r * .75); ctx.lineTo(r * .1, -r * 1.12); ctx.stroke();
+  ctx.fillStyle = '#4caf50'; ctx.strokeStyle = '#2e6b31'; ctx.lineWidth = r * .07;
+  ctx.beginPath(); ctx.ellipse(r * .36, -r * 1.0, r * .3, r * .14, -.5, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  ctx.beginPath(); ctx.ellipse(-r * .45, -r * .35, r * .16, r * .24, .5, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#2b1a14';
+  if (danger) {
+    for (const s of [-1, 1]) {
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s * r * .3, -r * .05, r * .2, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#2b1a14'; ctx.beginPath(); ctx.arc(s * r * .3, -r * .02, r * .09, 0, TAU); ctx.fill();
+    }
+    ctx.beginPath(); ctx.ellipse(0, r * .42, r * .1, r * .14, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#6ec6ff';
+    ctx.beginPath(); ctx.moveTo(r * .82, -r * .62); ctx.quadraticCurveTo(r * 1.02, -r * .3, r * .82, -r * .22); ctx.quadraticCurveTo(r * .64, -r * .3, r * .82, -r * .62); ctx.fill();
+  } else {
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(s * r * .3, -r * .02, r * .1, 0, TAU); ctx.fill(); }
+    ctx.strokeStyle = '#2b1a14'; ctx.lineWidth = r * .08;
+    ctx.beginPath(); ctx.arc(0, r * .2, r * .2, .2 * Math.PI, .8 * Math.PI); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,150,150,.6)';
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(s * r * .55, r * .22, r * .12, r * .07, 0, 0, TAU); ctx.fill(); }
+  }
+  ctx.restore();
+  const left = S.shieldUntil - S.gt;
+  if (left > 0 && !(left < 1500 && Math.floor(now / 120) % 2)) {
+    ctx.save(); ctx.translate(cx, cy);
+    ctx.strokeStyle = 'rgba(61,139,255,.9)'; ctx.fillStyle = 'rgba(61,139,255,.18)'; ctx.lineWidth = r * .14;
+    ctx.beginPath(); ctx.arc(0, 0, r * (1.35 + Math.sin(now / 150) * .05), 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+  if (S.peelHeld || S.bricksLeft) {   // 頭上顯示手上的東西
+    const t = tokenCanvas(S.peelHeld ? 'peel' : 'brick'), s = r * 1.1;
+    ctx.drawImage(t, cx + r * .45, cy - r * 1.75, s, s);
+  }
+}
+function drawSnake2D(sn, now, vf, cs) {
+  const pts = snakePts(sn), L = pts.length, pal = PAL[sn.kind];
+  const w = pts.map(p => Math.max(0, 1 - Math.abs(p.f - vf)));
+  if (!w.some(v => v > .01)) return;
+  const P = i => [(pts[i].x + .5) * cs, (pts[i].y + .5) * cs];
+  const wid = i => cs * pal.w * (.72 - .26 * (i / Math.max(1, L - 1)));
+  const stunned = until(sn.stunUntil);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const pass of [0, 1]) {
+    for (let i = L - 1; i > 0; i--) {
+      const a = Math.min(w[i], w[i - 1]); if (a <= .01) continue;
+      ctx.globalAlpha = a;
+      const [ax, ay] = P(i), [bx, by] = P(i - 1);
+      ctx.strokeStyle = pass ? rgbStr(snakeColor(sn, i / Math.max(1, L - 1))) : pal.line;
+      ctx.lineWidth = wid(i) + (pass ? 0 : cs * .12);
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    }
+  }
+  ctx.fillStyle = 'rgba(255,255,200,.45)';
+  for (let i = 2; i < L; i += 3) { if (w[i] <= .01) continue; ctx.globalAlpha = w[i]; const [x, y] = P(i); ctx.beginPath(); ctx.arc(x, y, wid(i) * .18, 0, TAU); ctx.fill(); }
+  ctx.globalAlpha = w[0];
+  if (w[0] > .01) {
+    const [hx, hy] = P(0), [dx, dy] = headDir(sn), px = -dy, py = dx, hr = cs * .47 * pal.w;
+    if (until(sn.rageUntil)) {
+      ctx.fillStyle = `rgba(255,${120 + Math.sin(now / 40) * 60 | 0},0,.55)`;
+      ctx.beginPath(); ctx.arc(hx - dx * cs * .3, hy - dy * cs * .3, hr * 1.25, 0, TAU); ctx.fill();
+    }
+    if (!stunned && Math.sin(now / 90 + sn.id) > .2) {
+      ctx.strokeStyle = '#e0332f'; ctx.lineWidth = cs * .07;
+      const tx = hx + dx * cs * .72 * pal.w, ty = hy + dy * cs * .72 * pal.w;
+      ctx.beginPath(); ctx.moveTo(hx + dx * hr * .85, hy + dy * hr * .85); ctx.lineTo(tx, ty);
+      ctx.moveTo(tx, ty); ctx.lineTo(tx + (dx + px) * cs * .12, ty + (dy + py) * cs * .12);
+      ctx.moveTo(tx, ty); ctx.lineTo(tx + (dx - px) * cs * .12, ty + (dy - py) * cs * .12); ctx.stroke();
+    }
+    const hc = until(sn.rageUntil) ? '#c0392b' : until(S.slowUntil) ? '#3f6fc2' : pal.head;
+    ctx.fillStyle = hc; ctx.strokeStyle = pal.line; ctx.lineWidth = cs * .08;
+    ctx.beginPath(); ctx.arc(hx, hy, hr, 0, TAU); ctx.fill(); ctx.stroke();
+    const pl = playerPos();
+    for (const s of [-1, 1]) {
+      const ex = hx + dx * hr * .3 + px * s * hr * .43, ey = hy + dy * hr * .3 + py * s * hr * .43;
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(ex, ey, hr * .3, 0, TAU); ctx.fill();
+      if (stunned) {
+        ctx.strokeStyle = '#1b1b1b'; ctx.lineWidth = cs * .045; const q = hr * .15;
+        ctx.beginPath(); ctx.moveTo(ex - q, ey - q); ctx.lineTo(ex + q, ey + q); ctx.moveTo(ex + q, ey - q); ctx.lineTo(ex - q, ey + q); ctx.stroke();
+      } else {
+        let vx = (pl.x + .5) * cs - ex, vy = (pl.y + .5) * cs - ey;
+        if (until(S.ghostUntil) || S.player.f !== sn.body[0].f) { vx = dx; vy = dy; }
+        const m = Math.hypot(vx, vy) || 1;
+        ctx.fillStyle = '#1b1b1b'; ctx.beginPath(); ctx.arc(ex + vx / m * hr * .1, ey + vy / m * hr * .1, hr * .15, 0, TAU); ctx.fill();
+      }
+    }
+    if (stunned) {
+      ctx.fillStyle = '#f7c21b'; ctx.strokeStyle = '#9a6a00'; ctx.lineWidth = cs * .03;
+      for (let i = 0; i < 3; i++) {
+        const a = now / 250 + i * TAU / 3;
+        ctx.save(); ctx.translate(hx + Math.cos(a) * cs * .5, hy - cs * .55 + Math.sin(a) * cs * .16);
+        ctx.beginPath(); starPath(ctx, cs * .13, cs * .06, a); ctx.fill(); ctx.stroke(); ctx.restore();
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+function render2D(now) {
+  const W = cv2.width, cs = W / N;
+  if (!W || !G) return;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
+  const vf = S.player ? S.player.f : 0, pal = FLOOR_PAL[vf % 3];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    ctx.fillStyle = (x + y) % 2 ? pal[1] : pal[0];
+    ctx.fillRect(Math.floor(x * cs), Math.floor(y * cs), Math.ceil(cs) + 1, Math.ceil(cs) + 1);
+  }
+  // 石頭
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    if (!G.rocks[idx(x, y, vf)]) continue;
+    const X = x * cs, Y = y * cs;
+    ctx.fillStyle = 'rgba(0,0,0,.15)'; rrect(ctx, X + cs * .1, Y + cs * .18, cs * .86, cs * .82, cs * .22); ctx.fill();
+    ctx.fillStyle = '#9c8f80'; ctx.strokeStyle = '#5c5147'; ctx.lineWidth = cs * .07;
+    rrect(ctx, X + cs * .06, Y + cs * .06, cs * .88, cs * .84, cs * .22); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.beginPath(); ctx.ellipse(X + cs * .35, Y + cs * .3, cs * .16, cs * .09, -.4, 0, TAU); ctx.fill();
+  }
+  // 傳送梯
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const to = G.stairs[idx(x, y, vf)]; if (to < 0) continue;
+    const X = x * cs, Y = y * cs, warn = stairWarn({ x, y }, vf);
+    ctx.fillStyle = warn && Math.floor(now / 160) % 2 ? '#e0332f' : '#8b5cf6'; ctx.strokeStyle = '#3b2380'; ctx.lineWidth = cs * .07;
+    rrect(ctx, X + cs * .07, Y + cs * .07, cs * .86, cs * .86, cs * .2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `900 ${cs * .38}px system-ui,sans-serif`; ctx.fillText(to > vf ? '▲' : '▼', X + cs * .5, Y + cs * .36);
+    ctx.font = `900 ${cs * .27}px system-ui,sans-serif`; ctx.fillText(`${to + 1}F`, X + cs * .5, Y + cs * .72);
+  }
+  // 磚牆
+  for (const b of S.bricks) {
+    if (b.f !== vf) continue;
+    const left = b.until - S.gt; if (left < 1500 && Math.floor(now / 130) % 2) continue;
+    const X = b.x * cs, Y = b.y * cs;
+    ctx.fillStyle = '#c8553d'; ctx.strokeStyle = '#6b2414'; ctx.lineWidth = cs * .06;
+    rrect(ctx, X + cs * .05, Y + cs * .05, cs * .9, cs * .9, cs * .08); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,230,210,.7)'; ctx.lineWidth = cs * .04; ctx.beginPath();
+    for (const r of [.35, .65]) { ctx.moveTo(X + cs * .08, Y + cs * r); ctx.lineTo(X + cs * .92, Y + cs * r); }
+    ctx.moveTo(X + cs * .5, Y + cs * .08); ctx.lineTo(X + cs * .5, Y + cs * .35);
+    ctx.moveTo(X + cs * .3, Y + cs * .35); ctx.lineTo(X + cs * .3, Y + cs * .65);
+    ctx.moveTo(X + cs * .7, Y + cs * .35); ctx.lineTo(X + cs * .7, Y + cs * .65);
+    ctx.moveTo(X + cs * .5, Y + cs * .65); ctx.lineTo(X + cs * .5, Y + cs * .92); ctx.stroke();
+  }
+  // 道具
+  for (const it of S.items) {
+    if (it.f !== vf) continue;
+    const left = it.life - (S.gt - it.born);
+    if (it.type !== 'egg' && it.type !== 'peel' && left < 2000 && Math.floor(now / 140) % 2) continue;
+    const cx = (it.x + .5) * cs, cy = (it.y + .5) * cs;
+    ctx.save(); ctx.translate(cx, cy);
+    if (it.type === 'peel') {
+      ctx.rotate(.5); const s = cs * .85; ctx.drawImage(tokenCanvas('peel'), -s / 2, -s / 2, s, s);
+    } else {
+      ctx.fillStyle = 'rgba(0,0,0,.14)'; ctx.beginPath(); ctx.ellipse(0, cs * .36, cs * .26, cs * .08, 0, 0, TAU); ctx.fill();
+      let pulse = 1 + Math.sin(now / 220 + it.id) * .07;
+      if (it.type === 'egg') { const p = (S.gt - it.born) / it.life; ctx.rotate(Math.sin(now / (120 - p * 80)) * (.08 + p * .3)); }
+      ctx.translate(0, -Math.sin(now / 300 + it.id) * cs * .04);
+      const s = cs * .86 * pulse; ctx.drawImage(tokenCanvas(it.type), -s / 2, -s / 2, s, s);
+      if (it.type === 'egg') {
+        const p = (S.gt - it.born) / it.life;
+        ctx.strokeStyle = '#e0332f'; ctx.lineWidth = cs * .08; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.arc(0, 0, s * .52, -Math.PI / 2, -Math.PI / 2 + TAU * p); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+  // 蘋果
+  const pp = playerPos();
+  if (Math.abs(pp.f - vf) < .99) drawApple2D((pp.x + .5) * cs, (pp.y + .5) * cs, cs * .38, now, pp.k);
+  for (const sn of S.snakes) drawSnake2D(sn, now, vf, cs);
+  if (S.tip && S.tip.at.f === vf) {   // 聚光燈圈出介紹中的道具
+    const cx = (S.tip.at.x + .5) * cs, cy = (S.tip.at.y + .5) * cs, r = cs * (.85 + Math.sin(now / 180) * .08);
+    ctx.fillStyle = 'rgba(30,25,20,.42)';
+    ctx.beginPath(); ctx.rect(0, 0, W, W); ctx.arc(cx, cy, r, 0, TAU, true); ctx.fill();
+    ctx.strokeStyle = '#f7c21b'; ctx.lineWidth = cs * .1; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
+  }
+}
+
+/* 小地圖（多樓層才顯示） */
+function renderMini() {
+  if (!G || F < 2 || !S.player) { if (mini.style.display !== 'none') mini.style.display = 'none'; return; }
+  const s = N > 14 ? 3 : 4, gap = 8, lab = 14, w = F * N * s + (F - 1) * gap, h = N * s + lab, dpr = 2;
+  if (mini.width !== w * dpr) { mini.width = w * dpr; mini.height = h * dpr; mini.style.width = w + 'px'; mini.style.height = h + 'px'; }
+  mini.style.display = 'block';
+  const c = mctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+  for (let f = 0; f < F; f++) {
+    const ox = f * (N * s + gap), oy = lab, cur = f === S.player.f;
+    c.fillStyle = cur ? '#2b2a26' : '#8a8478'; c.font = '900 11px system-ui,sans-serif'; c.textBaseline = 'top'; c.textAlign = 'left';
+    c.fillText(`${f + 1}F${cur ? ' ← 你' : ''}`, ox, 0);
+    c.fillStyle = FLOOR_PAL[f % 3][1]; c.fillRect(ox, oy, N * s, N * s);
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const k = idx(x, y, f);
+      if (G.rocks[k]) { c.fillStyle = '#7d7064'; c.fillRect(ox + x * s, oy + y * s, s, s); }
+      else if (G.stairs[k] >= 0) { c.fillStyle = '#8b5cf6'; c.fillRect(ox + x * s, oy + y * s, s, s); }
+    }
+    for (const b of S.bricks) if (b.f === f) { c.fillStyle = '#c8553d'; c.fillRect(ox + b.x * s, oy + b.y * s, s, s); }
+    for (const it of S.items) if (it.f === f && it.type !== 'peel') { c.fillStyle = it.type === 'star' ? '#f2b705' : ITEM[it.type].bad ? '#e0332f' : '#3d8bff'; c.fillRect(ox + it.x * s + 1, oy + it.y * s + 1, s - 1, s - 1); }
+    for (const sn of S.snakes) sn.body.forEach((b, i) => { if (b.f !== f) return; c.fillStyle = i ? PAL[sn.kind].a : PAL[sn.kind].line; c.fillRect(ox + b.x * s, oy + b.y * s, s, s); });
+    if (S.player.f === f) { c.fillStyle = '#e0332f'; c.beginPath(); c.arc(ox + (S.player.x + .5) * s, oy + (S.player.y + .5) * s, s * .9, 0, TAU); c.fill(); }
+    c.strokeStyle = cur ? '#2b2a26' : 'rgba(43,42,38,.35)'; c.lineWidth = cur ? 2 : 1; c.strokeRect(ox + .5, oy + .5, N * s - 1, N * s - 1);
+  }
+}
+
+/* ================= 3D 繪圖 ================= */
+function init3D() {
+  if (typeof THREE === 'undefined') return false;
+  try {
+    const renderer = new THREE.WebGLRenderer({ canvas: cv3, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(36, 1, .1, 300);
+    const std = (color, o) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: .55 }, o || {}));
+    scene.add(new THREE.HemisphereLight(0xfff6e0, 0x5b4a2e, .5));
+    scene.add(new THREE.AmbientLight(0xffffff, .08));
+    const sun = new THREE.DirectionalLight(0xfff4e0, .62);
+    sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
+    Object.assign(sun.shadow.camera, { left: -13, right: 13, top: 13, bottom: -13, near: 1, far: 60 });
+    sun.shadow.bias = -.0008; scene.add(sun); scene.add(sun.target);
+
+    const sphere = new THREE.SphereGeometry(.5, 18, 12);
+    const mkBody = (opacity) => {
+      const m = new THREE.InstancedMesh(sphere, std(0xffffff, opacity < 1 ? { transparent: true, opacity, depthWrite: false, roughness: .45 } : { roughness: .45 }), 2400);
+      m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false;
+      const c0 = new THREE.Color(0x3f9a4a); for (let i = 0; i < 2400; i++) m.setColorAt(i, c0);
+      m.count = 0; scene.add(m); return m;
+    };
+    const body = mkBody(1), ghostBody = mkBody(.3);
+    body.castShadow = true; body.receiveShadow = true;
+
+    const eyeW = std(0xffffff, { roughness: .2 }), eyeB = std(0x151515, { roughness: .2 }), tMat = std(0xe0332f);
+    const starMat = std(0xf7c21b, { roughness: .3, metalness: .35, emissive: 0x6b4a00, emissiveIntensity: .35 });
+    const miniStar = new THREE.ExtrudeGeometry((() => { const s = new THREE.Shape(); starPath(s, .13, .06, 0, true); return s; })(), { depth: .04, bevelEnabled: false });
+    miniStar.center();
+    function makeHead() {
+      const g = new THREE.Group(), mat = std(0x2f7d3a, { roughness: .4 });
+      const hm = new THREE.Mesh(new THREE.SphereGeometry(.5, 26, 18), mat); hm.scale.set(1, .8, 1.15); hm.castShadow = true; g.add(hm);
+      const eyes = [];
+      for (const s of [-1, 1]) {
+        const e = new THREE.Group(); e.position.set(s * .22, .24, .26);
+        e.add(new THREE.Mesh(new THREE.SphereGeometry(.15, 16, 12), eyeW));
+        const pu = new THREE.Mesh(new THREE.SphereGeometry(.08, 12, 10), eyeB); pu.position.set(0, .02, .11); e.add(pu);
+        g.add(e); eyes.push(e);
+      }
+      const tongue = new THREE.Group();
+      const t1 = new THREE.Mesh(new THREE.BoxGeometry(.06, .025, .34), tMat); t1.position.z = .17; tongue.add(t1);
+      for (const s of [-1, 1]) { const f = new THREE.Mesh(new THREE.BoxGeometry(.05, .025, .14), tMat); f.position.set(s * .04, 0, .38); f.rotation.y = s * .5; tongue.add(f); }
+      tongue.position.set(0, -.08, .5); g.add(tongue);
+      const stun = new THREE.Group(); for (let i = 0; i < 3; i++) stun.add(new THREE.Mesh(miniStar, starMat));
+      const fire = new THREE.Mesh(new THREE.SphereGeometry(.7, 16, 12), new THREE.MeshBasicMaterial({ color: 0xff5a1f, transparent: true, opacity: .35, depthWrite: false }));
+      g.add(fire);
+      scene.add(g); scene.add(stun);
+      return { g, hm, mat, eyes, tongue, stun, fire, yaw: 0 };
+    }
+
+    // 蘋果
+    const apple = new THREE.Group(), appleInner = new THREE.Group(); apple.add(appleInner);
+    const appleMats = [];
+    const am = new THREE.Mesh(new THREE.SphereGeometry(.4, 28, 20), std(0xe0332f, { roughness: .32 })); am.scale.set(1, .92, 1); am.castShadow = true; appleInner.add(am); appleMats.push(am.material);
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(.03, .045, .24, 8), std(0x5a3a1c)); stem.position.set(.02, .42, 0); stem.rotation.z = -.2; appleInner.add(stem); appleMats.push(stem.material);
+    const leaf = new THREE.Mesh(new THREE.SphereGeometry(.5, 12, 8), std(0x4caf50)); leaf.scale.set(.22, .045, .11); leaf.position.set(.15, .46, 0); leaf.rotation.z = .45; appleInner.add(leaf); appleMats.push(leaf.material);
+    const aEyes = [];
+    for (const s of [-1, 1]) {
+      const e = new THREE.Group(); e.position.set(s * .13, .06, .33);
+      e.add(new THREE.Mesh(new THREE.SphereGeometry(.085, 14, 10), eyeW));
+      const pu = new THREE.Mesh(new THREE.SphereGeometry(.05, 10, 8), eyeB); pu.position.z = .055; e.add(pu);
+      appleInner.add(e); aEyes.push(e);
+    }
+    const sweat = new THREE.Mesh(new THREE.SphereGeometry(.06, 10, 8), std(0x6ec6ff, { roughness: .1 })); sweat.scale.set(1, 1.5, 1); sweat.position.set(.34, .26, .2); appleInner.add(sweat);
+    const bubble = new THREE.Mesh(new THREE.SphereGeometry(.62, 26, 18), new THREE.MeshStandardMaterial({ color: 0x3d8bff, transparent: true, opacity: .25, roughness: .1, depthWrite: false }));
+    apple.add(bubble);
+    const holdSprite = new THREE.Sprite(new THREE.SpriteMaterial({ depthWrite: false })); holdSprite.scale.set(.42, .42, 1); holdSprite.position.set(.3, .78, 0); apple.add(holdSprite);
+    scene.add(apple);
+
+    const tex = {}; for (const t of Object.keys(ITEM)) { tex[t] = new THREE.CanvasTexture(tokenCanvas(t)); }
+    holdSprite.material.map = tex.peel;
+
+    const tipRing = new THREE.Mesh(new THREE.RingGeometry(.62, .78, 40), new THREE.MeshBasicMaterial({ color: 0xf7c21b, transparent: true, opacity: .95, side: THREE.DoubleSide, depthWrite: false }));
+    tipRing.rotation.x = -Math.PI / 2; tipRing.visible = false; scene.add(tipRing);
+    const brickGeo = new THREE.BoxGeometry(.92, .7, .92);
+    const brickMat = std(0xc8553d, { roughness: .8 }), brickGhost = std(0xc8553d, { transparent: true, opacity: .25, depthWrite: false });
+
+    T = { renderer, scene, camera, sun, body, ghostBody, makeHead, tipRing, heads: [], apple, appleInner, appleMats, aEyes, sweat, bubble, holdSprite,
+          tex, items: new Map(), bricks: [], brickGeo, brickMat, brickGhost, std, starMat,
+          dummy: new THREE.Object3D(), col: new THREE.Color(), camF: 0, lastNow: performance.now(), level: null, floors: [] };
+    if (G) buildLevel3D();
+    return true;
+  } catch (e) { console.error(e); T = null; return false; }
+}
+function buildLevel3D() {
+  const { scene, std } = T;
+  if (T.level) { scene.remove(T.level); T.level.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
+  for (const m of T.items.values()) scene.remove(m); T.items.clear();
+  const L = new THREE.Group(); T.level = L; T.floors = []; T.pads = [];
+  const rockGeo = new THREE.DodecahedronGeometry(.44, 0);
+  for (let f = 0; f < F; f++) {
+    const y0 = f * FH, fg = new THREE.Group(), fl = { group: fg };
+    const tc = document.createElement('canvas'), px = 32; tc.width = tc.height = N * px;
+    const tx = tc.getContext('2d'), pal = FLOOR_PAL[f % 3];
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { tx.fillStyle = (x + y) % 2 ? pal[1] : pal[0]; tx.fillRect(x * px, y * px, px, px); }
+    const boardMat = new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(tc), roughness: .95 });
+    const board = new THREE.Mesh(new THREE.PlaneGeometry(N, N), boardMat);
+    board.rotation.x = -Math.PI / 2; board.position.y = y0; board.receiveShadow = true; fg.add(board);
+    const baseMat = std(0x8a6a45, { roughness: .8 });
+    const base = new THREE.Mesh(new THREE.BoxGeometry(N + 1, f ? .3 : .8, N + 1), baseMat);
+    base.position.y = y0 - (f ? .16 : .41); base.receiveShadow = true; fg.add(base);
+    const rimMat = std(0xb08b5c, { roughness: .7 });
+    const rimH = new THREE.BoxGeometry(N + 1, .32, .5), rimV = new THREE.BoxGeometry(.5, .32, N);
+    for (const s of [-1, 1]) {
+      const a = new THREE.Mesh(rimH, rimMat); a.position.set(0, y0 + .16, s * (N / 2 + .25)); a.castShadow = a.receiveShadow = true; fg.add(a);
+      const b = new THREE.Mesh(rimV, rimMat); b.position.set(s * (N / 2 + .25), y0 + .16, 0); b.castShadow = b.receiveShadow = true; fg.add(b);
+    }
+    const rockMat = std(0x9c8f80, { roughness: .9, flatShading: true });
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      if (!G.rocks[idx(x, y, f)]) continue;
+      const w = W3(x, y), r = new THREE.Mesh(rockGeo, rockMat);
+      r.position.set(w.x, y0 + .34, w.z); r.scale.set(1, .85, 1); r.rotation.y = (x * 7 + y * 13) % 6; r.castShadow = r.receiveShadow = true; fg.add(r);
+    }
+    L.add(fg);
+    T.floors.push(fl);
+  }
+  // 傳送梯：兩層之間的光柱＋兩頭的踏板
+  for (const st of G.stairList) {
+    const w = W3(st.x, st.y);
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(.4, .4, FH, 20, 1, true),
+      new THREE.MeshStandardMaterial({ color: 0x8b5cf6, transparent: true, opacity: .2, side: THREE.DoubleSide, depthWrite: false, emissive: 0x3b2380, emissiveIntensity: .4 }));
+    tube.position.set(w.x, st.f * FH + FH / 2, w.z); L.add(tube);
+    for (const [f, up] of [[st.f, true], [st.f + 1, false]]) {
+      const padMat = std(0x8b5cf6, { emissive: 0x5b2fd6, emissiveIntensity: .5, roughness: .3 });
+      const pad = new THREE.Mesh(new THREE.CylinderGeometry(.46, .46, .07, 24), padMat);
+      pad.position.set(w.x, f * FH + .04, w.z); pad.receiveShadow = true; L.add(pad);
+      const ac = document.createElement('canvas'); ac.width = ac.height = 128; const g = ac.getContext('2d');
+      g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = '900 64px system-ui,sans-serif'; g.fillText(up ? '▲' : '▼', 64, 48);
+      g.font = '900 38px system-ui,sans-serif'; g.fillText(`${(up ? st.f + 1 : st.f) + 1}F`, 64, 102);
+      const lab = new THREE.Mesh(new THREE.PlaneGeometry(.78, .78), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(ac), transparent: true, depthWrite: false }));
+      lab.rotation.x = -Math.PI / 2; lab.position.set(w.x, f * FH + .085, w.z); L.add(lab);
+      T.pads.push({ x: st.x, y: st.y, f, mat: padMat });
+    }
+  }
+  scene.add(L);
+  T.camF = S.player ? S.player.f : 0;
+  fitCamera();
+}
+function setFloorLook(f, look) {   // 只畫你所在的樓層，其他樓層的蛇以半透明顯示
+  const fl = T.floors[f]; if (fl) fl.group.visible = look === 'solid';
+}
+function fitCamera() {
+  if (!T) return;
+  const cam = T.camera, dir = new THREE.Vector3(0, 1, .8).normalize(), tgt = new THREE.Vector3(0, 0, 0);
+  const e = N / 2 + .5, pts = [];
+  for (const x of [-e, e]) for (const z of [-e, e]) for (const y of [-.82, .4]) pts.push(new THREE.Vector3(x, y, z));
+  let d = 10;
+  for (let iter = 0; iter < 4; iter++) {
+    for (d = 10; d < 90; d += .25) {
+      cam.position.copy(dir).multiplyScalar(d).add(tgt); cam.lookAt(tgt); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
+      let ok = true;
+      for (const p of pts) { const v = p.clone().project(cam); if (Math.abs(v.x) > .93 || Math.abs(v.y) > .93) { ok = false; break; } }
+      if (ok) break;
+    }
+    let mn = 9, mx = -9;
+    for (const p of pts) { const v = p.clone().project(cam); mn = Math.min(mn, v.y); mx = Math.max(mx, v.y); }
+    tgt.z -= (mn + mx) / 2 * N * .45;
+  }
+  T.camBase = cam.position.clone(); T.camTgt = tgt.clone();
+}
+function render3D(now) {
+  if (!G || !T.camBase) return;
+  const dt = Math.min(.05, (now - T.lastNow) / 1000); T.lastNow = now;
+  const { body, ghostBody, dummy, col } = T;
+  const pp = S.player ? playerPos() : { x: N / 2, y: N / 2, f: 0, k: 1 };
+  T.camF += (pp.f - T.camF) * Math.min(1, dt * 5);
+  const vf = Math.round(T.camF);
+  T.camera.position.copy(T.camBase); T.camera.position.y += T.camF * FH;
+  const tg = T.camTgt.clone(); tg.y += T.camF * FH; T.camera.lookAt(tg);
+  T.sun.position.set(-7, 18 + T.camF * FH, 9); T.sun.target.position.set(0, T.camF * FH, 0);
+  for (let f = 0; f < F; f++) setFloorLook(f, f === vf ? 'solid' : 'ghost');
+
+  // 蛇
+  let n = 0, g = 0;
+  const put = (mesh, k, x, y, z, s) => { dummy.position.set(x, y, z); dummy.scale.setScalar(s); dummy.updateMatrix(); mesh.setMatrixAt(k, dummy.matrix); mesh.setColorAt(k, col); };
+  S.snakes.forEach((sn, si) => {
+    const pts = snakePts(sn), L = pts.length, k = PAL[sn.kind].w;
+    for (let i = 1; i < L; i++) {
+      const t = i / Math.max(1, L - 1), s = (.8 - .28 * t) * k, c = snakeColor(sn, t);
+      col.setRGB(c[0] / 255, c[1] / 255, c[2] / 255); if (i % 3 === 0) col.offsetHSL(0, 0, .07);
+      for (const [p, ss] of [[pts[i], s], [{ x: (pts[i].x + pts[i - 1].x) / 2, y: (pts[i].y + pts[i - 1].y) / 2, f: (pts[i].f + pts[i - 1].f) / 2 }, s + .02]]) {
+        const w = W3(p.x, p.y), y = p.f * FH + ss * .5 + .02 + Math.sin(now / 160 - i * .7) * .025;
+        if (Math.abs(p.f - vf) < .5) { if (n < 2400) put(body, n++, w.x, y, w.z, ss); }
+        else if (g < 2400) put(ghostBody, g++, w.x, y, w.z, ss);
+      }
+    }
+    // 頭
+    if (!T.heads[si]) T.heads[si] = T.makeHead();
+    const H = T.heads[si], h = W3(pts[0].x, pts[0].y), [dx, dy] = headDir(sn), stunned = until(sn.stunUntil);
+    let diff = Math.atan2(dx, dy) - H.yaw; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); H.yaw += diff * .35;
+    H.g.visible = true; H.g.position.set(h.x, pts[0].f * FH + .42 * k, h.z); H.g.rotation.y = H.yaw; H.g.scale.setScalar(k);
+    const hc = until(sn.rageUntil) ? 0xc0392b : until(S.slowUntil) ? 0x3f6fc2 : parseInt(PAL[sn.kind].head.slice(1), 16);
+    H.mat.color.setHex(hc);
+    const ghostHead = Math.abs(pts[0].f - vf) >= .5;
+    if (H.mat.transparent !== ghostHead) { H.mat.transparent = ghostHead; H.mat.opacity = ghostHead ? .35 : 1; H.mat.needsUpdate = true; }
+    H.tongue.visible = !stunned && Math.sin(now / 90 + sn.id) > .2;
+    for (const e of H.eyes) { e.scale.set(1, stunned ? .18 : 1, 1); e.visible = !ghostHead; }
+    H.hm.castShadow = !ghostHead;
+    H.fire.visible = until(sn.rageUntil); H.fire.scale.setScalar(1 + Math.sin(now / 50) * .12);
+    H.stun.visible = stunned;
+    if (stunned) H.stun.children.forEach((m, i) => { const a = now / 250 + i * TAU / 3; m.position.set(h.x + Math.cos(a) * .5, pts[0].f * FH + 1.05, h.z + Math.sin(a) * .5); m.rotation.y = a * 2; });
+  });
+  for (let i = S.snakes.length; i < T.heads.length; i++) { T.heads[i].g.visible = false; T.heads[i].stun.visible = false; }
+  body.count = n; ghostBody.count = g;
+  for (const m of [body, ghostBody]) { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
+
+  // 蘋果
+  const show = !!S.player, pw = W3(pp.x, pp.y), sc = show ? appleScale(now) : 0, danger = inDanger();
+  const hop = pp.k < 1 ? Math.sin(Math.PI * pp.k) : 0;
+  T.apple.visible = sc > 0;
+  T.apple.position.set(pw.x + (danger ? Math.sin(now / 25) * .03 : 0), pp.f * FH + .37 + hop * .4 + Math.sin(now / 320) * .02, pw.z);
+  T.apple.scale.setScalar(Math.max(.001, sc));
+  T.appleInner.scale.set(1 + hop * .06, 1 - hop * .06, 1 + hop * .06);
+  for (const e of T.aEyes) e.scale.setScalar(danger ? 1.35 : 1);
+  T.sweat.visible = danger;
+  const ghost = until(S.ghostUntil), gop = ghost ? (S.ghostUntil - S.gt < 1200 && Math.floor(now / 110) % 2 ? .7 : .35) : 1;
+  for (const m of T.appleMats) { const tr = gop < 1; if (m.transparent !== tr) { m.transparent = tr; m.needsUpdate = true; } m.opacity = gop; }
+  T.appleMats[0].emissive.setHex(until(S.dashUntil) && Math.floor(now / 90) % 2 ? 0x664400 : 0x000000);
+  const left = S.shieldUntil - S.gt;
+  T.bubble.visible = left > 0 && !(left < 1500 && Math.floor(now / 120) % 2);
+  T.bubble.scale.setScalar(1 + Math.sin(now / 150) * .04);
+  T.holdSprite.visible = !!(S.peelHeld || S.bricksLeft);
+  if (T.holdSprite.visible) { const m = S.peelHeld ? T.tex.peel : T.tex.brick; if (T.holdSprite.material.map !== m) { T.holdSprite.material.map = m; T.holdSprite.material.needsUpdate = true; } }
+
+  // 道具
+  const alive = new Set();
+  for (const it of S.items) {
+    alive.add(it.id);
+    let m = T.items.get(it.id);
+    if (!m) { m = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.tex[it.type], transparent: true })); T.scene.add(m); T.items.set(it.id, m); }
+    const w = W3(it.x, it.y), lf = it.life - (S.gt - it.born), peel = it.type === 'peel';
+    const s = peel ? .62 : .82 * (1 + Math.sin(now / 220 + it.id) * .06);
+    m.scale.set(s, s, 1);
+    m.position.set(w.x, it.f * FH + (peel ? .28 : .62 + Math.sin(now / 300 + it.id) * .08), w.z);
+    if (it.type === 'egg') { const p = (S.gt - it.born) / it.life; m.material.rotation = Math.sin(now / (120 - p * 80)) * (.08 + p * .35); }
+    m.material.opacity = it.f === vf ? 1 : .3;
+    m.visible = peel || it.type === 'egg' || !(lf < 2000 && Math.floor(now / 140) % 2);
+  }
+  for (const [id, m] of T.items) if (!alive.has(id)) { T.scene.remove(m); m.material.dispose(); T.items.delete(id); }
+
+  // 磚牆
+  while (T.bricks.length < S.bricks.length) { const m = new THREE.Mesh(T.brickGeo, T.brickMat); m.castShadow = m.receiveShadow = true; T.scene.add(m); T.bricks.push(m); }
+  T.bricks.forEach((m, i) => {
+    const b = S.bricks[i]; if (!b) { m.visible = false; return; }
+    const w = W3(b.x, b.y); m.position.set(w.x, b.f * FH + .35, w.z);
+    m.material = b.f === vf ? T.brickMat : T.brickGhost;
+    m.visible = !(b.until - S.gt < 1500 && Math.floor(now / 130) % 2);
+  });
+  // 傳送梯警示
+  for (const p of T.pads) {
+    const warn = stairWarn(p, p.f) && Math.floor(now / 160) % 2;
+    p.mat.color.setHex(warn ? 0xe0332f : 0x8b5cf6); p.mat.emissive.setHex(warn ? 0x7a0d08 : 0x5b2fd6);
+  }
+  T.tipRing.visible = !!S.tip;
+  if (S.tip) {
+    const w = W3(S.tip.at.x, S.tip.at.y);
+    T.tipRing.position.set(w.x, S.tip.at.f * FH + .06, w.z); T.tipRing.scale.setScalar(1 + Math.sin(now / 180) * .1);
+  }
+  T.renderer.render(T.scene, T.camera);
+}
+
+/* ================= HUD ================= */
+const hud = [0, 1, 2, 3].map(i => ({ v: $('#v' + i), l: $('#l' + i) })), lastHud = {};
+function setTxt(el, key, v) { if (lastHud[key] !== v) { lastHud[key] = v; el.textContent = v; } }
+function setHudLabels() {
+  const labels = S.mode === 'online' ? ['剩餘秒數', '你的角色', '你 : 對手', '蛇長'] : S.mode === 'level' ? ['目標', '時間', '蛇長', '關卡'] : S.mode === 'versus' ? ['剩餘秒數', '🍎 勝場', '🐍 勝場', '蛇長'] : ['分數', '存活秒數', '蛇長', '最高分'];
+  labels.forEach((t, i) => setTxt(hud[i].l, 'l' + i, t));
+}
+function updateHUD() {
+  const sec = (S.gt / 1000).toFixed(1), ms = S.snakes.length ? mainSnake().body.length : 0;
+  let v;
+  if (!S.mode) v = ['-', '-', '-', String(bestScore)];
+  else if (S.mode === 'level') {
+    const g = S.cfg.goal;
+    const prog = g.type === 'survive' ? `${Math.min(g.n, Math.floor(S.gt / 1000))}/${g.n}秒` : g.type === 'stars' ? `⭐${S.starsGot}/${g.n}` : `💫${S.kos}/${g.n}`;
+    v = [prog, sec, String(ms), `${S.li + 1}/${LEVELS.length}`];
+  } else if (S.mode === 'online') {
+    const me = NET.role === 'host' ? NET.tally.host : NET.tally.guest, op = NET.role === 'host' ? NET.tally.guest : NET.tally.host;
+    v = [String(Math.max(0, Math.ceil((S.cfg.time - S.gt) / 1000))), myRole() === 'apple' ? '🍎 蘋果' : '🐍 蛇', `${me} : ${op}`, String(ms)];
+  } else if (S.mode === 'versus') v = [String(Math.max(0, Math.ceil((S.cfg.time - S.gt) / 1000))), String(vsTally.apple), String(vsTally.snake), String(ms)];
+  else v = [String(score()), sec, String(ms), String(bestScore)];
+  v.forEach((t, i) => setTxt(hud[i].v, 'v' + i, t));
+  // 效果標籤
+  const ch = [];
+  if (S.mode && S.running) {
+    const s = t => Math.max(1, Math.ceil((t - S.gt) / 1000));
+    if (isOnline()) ch.push(`<span class="chip floor">🌐 房號 ${NET.room || '-'}・你是 ${myRole() === 'apple' ? '🍎' : '🐍'}</span>`);
+    if (F > 1) { const m = mainSnake(); ch.push(`<span class="chip floor">📍 你在 ${S.player.f + 1}F${m ? `・🐍 在 ${m.body[0].f + 1}F` : ''}</span>`); }
+    if (until(S.shieldUntil)) ch.push(`<span class="chip">🛡️ 護盾 ${s(S.shieldUntil)}秒</span>`);
+    if (until(S.ghostUntil)) ch.push(`<span class="chip">👻 隱形 ${s(S.ghostUntil)}秒</span>`);
+    if (until(S.dashUntil)) ch.push(`<span class="chip">⚡ 衝刺 ${s(S.dashUntil)}秒</span>`);
+    if (until(S.slowUntil)) ch.push(`<span class="chip">⏳ 蛇變慢 ${s(S.slowUntil)}秒</span>`);
+    if (S.peelHeld) ch.push(`<span class="chip">🍌 ×${S.peelHeld} 下一步丟出</span>`);
+    if (S.bricksLeft) ch.push(`<span class="chip">🧱 還能砌 ${S.bricksLeft} 塊</span>`);
+    const rage = S.snakes.filter(sn => until(sn.rageUntil)); if (rage.length) ch.push(`<span class="chip bad">🌶️ 蛇暴衝 ${s(Math.max(...rage.map(r => r.rageUntil)))}秒</span>`);
+    const babies = S.snakes.filter(sn => sn.kind === 'baby').length; if (babies) ch.push(`<span class="chip bad">🐣 小蛇 ×${babies}</span>`);
+    if (S.mode === 'level' && S.cfg.goal.type !== 'ko' && S.kos) ch.push(`<span class="chip">💫 反殺 ${S.kos}</span>`);
+  }
+  const html = ch.length ? ch.join('') : `<span class="muted">${S.running ? '撿到的道具效果會顯示在這裡' : '選一個模式開始吧'}</span>`;
+  if (lastHud.chips !== html) { lastHud.chips = html; chipsEl.innerHTML = html; }
+  stage.classList.toggle('danger', inDanger());
+}
+
+/* ================= 模式切換、尺寸、輸入 ================= */
+function resize() {
+  const r = stage.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv2.width = Math.max(1, Math.round(r.width * dpr)); cv2.height = Math.max(1, Math.round(r.height * dpr));
+  if (T && r.width) { T.renderer.setSize(r.width, r.height, false); T.camera.aspect = r.width / r.height || 1; fitCamera(); }
+}
+function setView(m) {
+  if (m === '3d' && !T && !init3D()) {
+    m = '2d';
+    const el = document.createElement('div'); el.className = 'popup red'; el.textContent = '這台裝置無法顯示 3D，維持 2D';
+    el.style.left = '50%'; el.style.top = '50%'; stage.appendChild(el); setTimeout(() => el.remove(), 1300);
+  }
+  view = m;
+  cv2.style.display = m === '2d' ? 'block' : 'none';
+  cv3.style.display = m === '3d' ? 'block' : 'none';
+  stage.classList.toggle('is3d', m === '3d');
+  $('#m2').classList.toggle('on', m === '2d'); $('#m3').classList.toggle('on', m === '3d');
+  store.set('reverse-snake-mode', m);
+  resize();
+}
+$('#m2').addEventListener('click', () => setView('2d'));
+$('#m3').addEventListener('click', () => setView('3d'));
+
+// 用實體按鍵位置（e.code）判斷，開著中文輸入法也能用 WASD
+const CODE_ARROW = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right' };
+const CODE_WASD = { KeyW:'up', KeyS:'down', KeyA:'left', KeyD:'right' };
+const KEY_WASD = { w:'up', s:'down', a:'left', d:'right', W:'up', S:'down', A:'left', D:'right' };
+function keyInfo(e) {
+  const code = e.code || '';
+  return {
+    arrow: CODE_ARROW[code] || CODE_ARROW[e.key],
+    wasd: CODE_WASD[code] || (code ? null : KEY_WASD[e.key]),
+    space: code === 'Space' || code === 'Enter' || code === 'NumpadEnter' || e.key === ' ' || e.key === 'Enter',
+    pause: code === 'KeyP' || code === 'Escape' || e.key === 'Escape',
+    two: code === 'Digit2' || code === 'Numpad2' || e.key === '2',
+    three: code === 'Digit3' || code === 'Numpad3' || e.key === '3'
+  };
+}
+const playing = () => S.running && !S.paused && !S.over;
+function pressDir(d) {
+  if (isOnline()) return onlineInput(d, true);
+  if (!held.includes(d)) held.push(d); S.queued = d; if (playing()) processInput();
+}
+function releaseDir(d) {
+  if (isOnline()) return onlineInput(d, false);
+  held = held.filter(x => x !== d);
+}
+function onlineInput(d, down) {
+  if (!S.running || S.over) return;
+  if (NET.role === 'host') {
+    if (NET.hostRole === 'apple') {
+      if (down) { if (!held.includes(d)) held.push(d); S.queued = d; if (playing()) processInput(); }
+      else held = held.filter(x => x !== d);
+    } else if (down) { const sn = S.snakes[0]; if (sn && sn.qd.length < 3) sn.qd.push(d); }
+  } else netSend({ k:'in', d, down: down ? 1 : 0 });
+}
+addEventListener('keydown', e => {
+  if (e.target && e.target.tagName === 'INPUT') return;   // 正在輸入房號
+  const k = keyInfo(e), a = k.arrow, w = k.wasd;
+  if (a || w) {
+    e.preventDefault();
+    if (S.mode === 'versus' && a) {
+      const sn = S.snakes[0];
+      if (playing() && sn && !e.repeat && sn.qd.length < 3) sn.qd.push(a);
+      return;
+    }
+    const d = w || a;
+    if (!e.repeat) pressDir(d); else if (!isOnline() && !held.includes(d)) held.push(d);
+    return;
+  }
+  if (k.space) {
+    e.preventDefault();
+    if (S.tip) dismissTip();
+    else if (!overlay.classList.contains('hide')) { const p = overlay.querySelector('[data-primary]'); if (p) p.click(); }
+    else togglePause();
+    return;
+  }
+  if (k.pause) { if (S.tip) dismissTip(); else if (S.running && !S.over) togglePause(); }
+  if (k.two) setView('2d');
+  if (k.three) setView('3d');
+});
+addEventListener('keyup', e => {
+  if (e.target && e.target.tagName === 'INPUT') return;
+  const k = keyInfo(e);
+  if (k.wasd) releaseDir(k.wasd);
+  else if (k.arrow && S.mode !== 'versus') releaseDir(k.arrow);   // 對戰時方向鍵是蛇的，不影響蘋果
+});
+addEventListener('blur', () => { held = []; if (playing() && !isOnline()) togglePause(); });
+
+document.querySelectorAll('#pad [data-dir]').forEach(b => {
+  const d = b.dataset.dir;
+  b.addEventListener('pointerdown', e => { e.preventDefault(); b.classList.add('down'); pressDir(d); });
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, () => { b.classList.remove('down'); releaseDir(d); });
+});
+$('#pad [data-act="pause"]').addEventListener('click', () => { if (S.running && !S.over) togglePause(); });
+let sw = null;
+stage.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse' && overlay.classList.contains('hide')) sw = { x: e.clientX, y: e.clientY }; });
+stage.addEventListener('pointermove', e => {
+  if (!sw) return;
+  const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 22) return;
+  const d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+  if (isOnline()) { onlineInput(d, true); onlineInput(d, false); }
+  else { S.queued = d; if (playing()) processInput(); }
+  sw = { x: e.clientX, y: e.clientY };
+});
+for (const ev of ['pointerup', 'pointercancel']) stage.addEventListener(ev, () => { sw = null; });
+
+/* ================= 主迴圈 ================= */
+let lastFrame = performance.now();
+function frame(now) {
+  const dt = Math.min(50, now - lastFrame); lastFrame = now;
+  if (isGuest()) guestTick(dt);
+  else {
+    if (playing() && !S.idle && S.tipQueue && S.tipQueue.length) showTip(S.tipQueue.shift());
+    if (playing()) update(dt);
+    else if (S.over && S.eater && S.eater.acc < S.eater.ms) S.eater.acc = Math.min(S.eater.ms, S.eater.acc + dt);
+    if (isNetHost() && S.running && !S.over && now - NET.lastSent >= 50) { NET.lastSent = now; netSend({ k:'snap', s:makeSnap() }); }
+  }
+  try {
+    if (view === '3d' && T) render3D(now); else render2D(now);
+    renderMini();
+  } catch (e) { console.error(e); }
+  updateHUD();
+  requestAnimationFrame(frame);
+}
+
+// 給自動測試用的入口（不影響遊戲）
+window.__rs = { S, NET, startGame, update, tryMove, setView, LEVELS, get view() { return view; }, get T() { return T; }, get G() { return G; }, get N() { return N; }, get F() { return F; }, stepCell, buildBlocked, idx, neighbors };
+
+// 首頁背景：放一條在棋盤上散步的蛇
+idle();
+new ResizeObserver(resize).observe(stage);
+setView(store.get('reverse-snake-mode', '2d') === '3d' ? '3d' : '2d');
+showOverlay('home');
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

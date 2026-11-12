@@ -1,0 +1,16 @@
+{
+  "name": "reverse-snake-online",
+  "version": "1.0.0",
+  "description": "反向貪食蛇：可以網路對戰的版本（Node.js + WebSocket）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "license": "MIT"
+}
