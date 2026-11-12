@@ -180,17 +180,17 @@ try { seen = new Set(JSON.parse(store.get('reverse-snake-seen', '[]'))); } catch
 const tipEl = $('#tip');
 
 const ITEM = {
-  star:     { emoji:'⭐', name:'星星',   color:'#f7c21b', short:'撿了 +10 分', desc:'+10 分。被蛇吃到，牠會變長。' },
-  shield:   { emoji:'🛡️', name:'護盾',   color:'#3d8bff', short:'蛇撞上來會被彈暈', desc:'7 秒內，蛇撞上來會被彈暈（算一次反殺）。' },
-  hourglass:{ emoji:'⏳', name:'沙漏',   color:'#a58fe0', short:'蛇變慢 5 秒', desc:'所有蛇變慢 5 秒。' },
-  ghost:    { emoji:'👻', name:'隱形',   color:'#b8c2cc', short:'蛇看不到你', desc:'4 秒內蛇看不到你，只會到處亂晃。' },
-  dash:     { emoji:'⚡', name:'衝刺',   color:'#ffcf3a', short:'你跑得更快', desc:'4 秒內你的移動速度加倍。' },
-  banana:   { emoji:'🍌', name:'香蕉皮', color:'#fff1a6', short:'丟在身後讓蛇滑倒', desc:'撿起後，下一步會丟在身後。蛇踩到會滑倒暈眩（算一次反殺）。' },
-  scissors: { emoji:'✂️', name:'剪刀',   color:'#ffb3c6', short:'蛇尾巴剪掉一半', desc:'喀嚓！每條蛇的尾巴立刻少一半。' },
-  brick:    { emoji:'🧱', name:'磚塊',   color:'#f0a479', short:'在身後砌牆擋蛇', desc:'接下來 3 步會在身後砌牆，維持 9 秒，蛇得繞路。' },
-  chili:    { emoji:'🌶️', name:'辣椒',   color:'#ff7a5c', bad:true, short:'別讓蛇吃到！', desc:'被蛇吃到會暴衝 3 秒！你搶先撿走就沒事（+5 分）。' },
-  egg:      { emoji:'🥚', name:'蛇蛋',   color:'#f6ead0', bad:true, short:'快撿走，不然會孵化', desc:'7 秒內沒撿走就會孵出一條小蛇！撿走 +5 分。' },
-  peel:     { emoji:'🍌', name:'地上的香蕉皮', color:'#fff1a6' }
+  star:     { emoji:'⭐', name:'星星',   ring:'#f2b705', color:'#f7c21b', short:'撿了 +10 分', desc:'+10 分。被蛇吃到，牠會變長。' },
+  shield:   { emoji:'🛡️', name:'護盾',   ring:'#2f6fe0', color:'#3d8bff', short:'蛇撞上來會被彈暈', desc:'7 秒內，蛇撞上來會被彈暈（算一次反殺）。' },
+  hourglass:{ emoji:'⏳', name:'沙漏',   ring:'#7c4ddb', color:'#a58fe0', short:'蛇變慢 5 秒', desc:'所有蛇變慢 5 秒。' },
+  ghost:    { emoji:'👻', name:'隱形',   ring:'#5b6b80', color:'#b8c2cc', short:'蛇看不到你', desc:'4 秒內蛇看不到你，只會到處亂晃。' },
+  dash:     { emoji:'⚡', name:'衝刺',   ring:'#ff9800', color:'#ffcf3a', short:'你跑得更快', desc:'4 秒內你的移動速度加倍。' },
+  banana:   { emoji:'🍌', name:'香蕉皮', ring:'#e8b500', color:'#fff1a6', short:'丟在身後讓蛇滑倒', desc:'撿起後，下一步會丟在身後。蛇踩到會滑倒暈眩（算一次反殺）。' },
+  scissors: { emoji:'✂️', name:'剪刀',   ring:'#ec4f86', color:'#ffb3c6', short:'蛇尾巴剪掉一半', desc:'喀嚓！每條蛇的尾巴立刻少一半。' },
+  brick:    { emoji:'🧱', name:'磚塊',   ring:'#c8553d', color:'#f0a479', short:'在身後砌牆擋蛇', desc:'接下來 3 步會在身後砌牆，維持 9 秒，蛇得繞路。' },
+  chili:    { emoji:'🌶️', name:'辣椒',   ring:'#e0332f', color:'#ff7a5c', bad:true, short:'別讓蛇吃到！', desc:'被蛇吃到會暴衝 3 秒！你搶先撿走就沒事（+5 分）。' },
+  egg:      { emoji:'🥚', name:'蛇蛋',   ring:'#e0332f', color:'#f6ead0', bad:true, short:'快撿走，不然會孵化', desc:'7 秒內沒撿走就會孵出一條小蛇！撿走 +5 分。' },
+  peel:     { emoji:'🍌', name:'地上的香蕉皮', ring:'#e8b500', color:'#fff1a6' }
 };
 const TIP_EXTRA = {
   stairs: { emoji:'🟪', name:'傳送梯', info:true, desc:'踩上紫色格子就會到另一層樓。蛇也會用它來追你，另一頭有蛇靠近時會閃紅光。' }
@@ -915,7 +915,8 @@ function onlineLobbyHtml(d) {
   const st = NET.status;
   const msg = d.msg ? `<p class="rec">${d.msg}</p>` : '';
   if (st === 'nohost') return `<div class="panel"><div class="big">🌐</div><h2>網路對戰</h2>
-    <p>網路對戰要從遊戲伺服器的網址開啟，例如 <b>http://localhost:3000</b>。</p><p style="font-size:13px">目前這個頁面不是從伺服器開的，所以連不上。請先執行 <kbd>npm start</kbd>，再用瀏覽器打開它顯示的網址。</p>
+    <p>網路對戰要在遊戲伺服器的網址上玩：</p><p><a href="https://reverse-snake-online.onrender.com" target="_blank" rel="noopener"><b>reverse-snake-online.onrender.com</b></a></p>
+    <p style="font-size:12.5px;opacity:.75">自己架的話：執行 <kbd>npm start</kbd>，再打開它顯示的網址（例如 http://localhost:3000）。</p>
     <button class="btn sec" data-act="home" data-primary>主選單</button></div>`;
   const status = st === 'connecting' ? '<p>連線到伺服器中…</p>' : (st === 'fail' || st === 'closed') ? '<p class="rec">連不到遊戲伺服器，請確認伺服器有開著。</p>' : '';
   return `<div class="panel"><div class="big">🌐</div><h2>網路對戰</h2>${msg}${status}
@@ -1009,23 +1010,38 @@ const FLOOR_PAL = [['#d0e7b2', '#c3dda2'], ['#d3e6f0', '#c2d8e6'], ['#f2e2c6', '
 
 /* 道具圖示（2D 與 3D 共用） */
 const TOK = {};
-function tokenCanvas(type) {
-  if (TOK[type]) return TOK[type];
-  const c = document.createElement('canvas'); c.width = c.height = 128;
-  const g = c.getContext('2d'), it = ITEM[type];
+// 道具圖示：白底圓章＋顏色外圈＋（可選）中文名稱標籤。2D 和 3D 共用
+const TOKEN_W = 128, TOKEN_LH = 196, TOKEN_CY = 62;
+function tokenCanvas(type, label) {
+  const key = type + (label ? ':L' : '');
+  if (TOK[key]) return TOK[key];
+  const it = ITEM[type], c = document.createElement('canvas');
+  c.width = TOKEN_W; c.height = label ? TOKEN_LH : TOKEN_W;
+  const g = c.getContext('2d');
   if (type !== 'peel') {
-    g.beginPath(); g.arc(64, 64, 55, 0, TAU); g.fillStyle = it.color; g.fill();
-    g.lineWidth = 8; g.strokeStyle = it.bad ? '#b3261e' : '#2b2a26'; g.stroke();
-    g.beginPath(); g.arc(64, 64, 45, 0, TAU); g.lineWidth = 4; g.strokeStyle = 'rgba(255,255,255,.65)'; g.stroke();
+    g.beginPath(); g.arc(66, TOKEN_CY + 5, 57, 0, TAU); g.fillStyle = 'rgba(0,0,0,.28)'; g.fill();          // 陰影
+    g.beginPath(); g.arc(64, TOKEN_CY, 57, 0, TAU); g.fillStyle = it.ring; g.fill();                         // 顏色外圈
+    g.lineWidth = 6; g.strokeStyle = '#2b2a26'; g.stroke();
+    g.beginPath(); g.arc(64, TOKEN_CY, 46, 0, TAU); g.fillStyle = '#fff'; g.fill();                          // 白底
+    g.lineWidth = 3; g.strokeStyle = 'rgba(43,42,38,.3)'; g.stroke();
   }
-  g.font = `${type === 'peel' ? 86 : 62}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+  g.font = `${type === 'peel' ? 96 : 74}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
   g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillText(it.emoji, 64, type === 'peel' ? 68 : 70);
+  g.fillText(it.emoji, 64, type === 'peel' ? 68 : TOKEN_CY + 5);
   if (it.bad) {
-    g.beginPath(); g.arc(103, 25, 19, 0, TAU); g.fillStyle = '#e0332f'; g.fill(); g.lineWidth = 4; g.strokeStyle = '#fff'; g.stroke();
-    g.fillStyle = '#fff'; g.font = 'bold 28px sans-serif'; g.fillText('!', 103, 27);
+    g.beginPath(); g.arc(106, 18, 17, 0, TAU); g.fillStyle = '#e0332f'; g.fill(); g.lineWidth = 4; g.strokeStyle = '#fff'; g.stroke();
+    g.fillStyle = '#fff'; g.font = '900 26px system-ui,sans-serif'; g.fillText('!', 106, 20);
   }
-  return (TOK[type] = c);
+  if (label) {
+    const name = type === 'peel' ? '香蕉皮' : it.name;
+    g.font = '900 40px system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif';
+    const tw = Math.min(126, g.measureText(name).width + 20), x0 = 64 - tw / 2, y0 = 130, lh = 60;
+    g.beginPath(); g.moveTo(x0 + 14, y0); g.arcTo(x0 + tw, y0, x0 + tw, y0 + lh, 14); g.arcTo(x0 + tw, y0 + lh, x0, y0 + lh, 14);
+    g.arcTo(x0, y0 + lh, x0, y0, 14); g.arcTo(x0, y0, x0 + tw, y0, 14); g.closePath();
+    g.fillStyle = it.bad ? '#e0332f' : '#2b2a26'; g.fill();
+    g.fillStyle = '#fff'; g.fillText(name, 64, y0 + lh / 2 + 2, 118);
+  }
+  return (TOK[key] = c);
 }
 function stairWarn(st, fFrom) {   // 傳送梯另一頭有蛇靠近？
   const other = G.stairs[idx(st.x, st.y, fFrom)];
@@ -1202,6 +1218,7 @@ function render2D(now) {
     ctx.moveTo(X + cs * .5, Y + cs * .65); ctx.lineTo(X + cs * .5, Y + cs * .92); ctx.stroke();
   }
   // 道具
+  const labels = [];
   for (const it of S.items) {
     if (it.f !== vf) continue;
     const left = it.life - (S.gt - it.born);
@@ -1209,20 +1226,38 @@ function render2D(now) {
     const cx = (it.x + .5) * cs, cy = (it.y + .5) * cs;
     ctx.save(); ctx.translate(cx, cy);
     if (it.type === 'peel') {
-      ctx.rotate(.5); const s = cs * .85; ctx.drawImage(tokenCanvas('peel'), -s / 2, -s / 2, s, s);
+      ctx.rotate(.5); const s = cs * .95; ctx.drawImage(tokenCanvas('peel'), -s / 2, -s / 2, s, s);
     } else {
-      ctx.fillStyle = 'rgba(0,0,0,.14)'; ctx.beginPath(); ctx.ellipse(0, cs * .36, cs * .26, cs * .08, 0, 0, TAU); ctx.fill();
-      let pulse = 1 + Math.sin(now / 220 + it.id) * .07;
+      const ring = ITEM[it.type].ring, glow = .5 + Math.sin(now / 260 + it.id) * .5;   // 地上的同色光暈
+      ctx.fillStyle = ring; ctx.globalAlpha = .18 + glow * .17;
+      ctx.beginPath(); ctx.arc(0, 0, cs * (.72 + glow * .08), 0, TAU); ctx.fill();
+      ctx.globalAlpha = .9; ctx.strokeStyle = ring; ctx.lineWidth = cs * .07;
+      ctx.beginPath(); ctx.arc(0, 0, cs * (.72 + glow * .08), 0, TAU); ctx.stroke(); ctx.globalAlpha = 1;
+      let pulse = 1 + Math.sin(now / 220 + it.id) * .05;
       if (it.type === 'egg') { const p = (S.gt - it.born) / it.life; ctx.rotate(Math.sin(now / (120 - p * 80)) * (.08 + p * .3)); }
       ctx.translate(0, -Math.sin(now / 300 + it.id) * cs * .04);
-      const s = cs * .86 * pulse; ctx.drawImage(tokenCanvas(it.type), -s / 2, -s / 2, s, s);
+      const tok = tokenCanvas(it.type), s = cs * 1.32 * pulse;
+      ctx.drawImage(tok, -s / 2, -s * TOKEN_CY / TOKEN_W, s, s);
+      labels.push({ x: cx, y: cy + cs * .62, text: ITEM[it.type].name, bad: ITEM[it.type].bad });
       if (it.type === 'egg') {
         const p = (S.gt - it.born) / it.life;
         ctx.strokeStyle = '#e0332f'; ctx.lineWidth = cs * .08; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.arc(0, 0, s * .52, -Math.PI / 2, -Math.PI / 2 + TAU * p); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, s * .5, -Math.PI / 2, -Math.PI / 2 + TAU * p); ctx.stroke();
       }
     }
     ctx.restore();
+  }
+  // 道具名稱（字級固定，不會因格子變小而看不清楚）
+  if (labels.length) {
+    const dpr = W / (stage.clientWidth || W), fs = Math.max(11 * dpr, cs * .36);
+    ctx.font = `900 ${fs}px system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const l of labels) {
+      const tw = ctx.measureText(l.text).width + fs * .8, th = fs * 1.4;
+      ctx.fillStyle = l.bad ? '#e0332f' : '#2b2a26';
+      rrect(ctx, l.x - tw / 2, l.y, tw, th, th * .35); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.fillText(l.text, l.x, l.y + th / 2 + fs * .04);
+    }
   }
   // 蘋果
   const pp = playerPos();
@@ -1332,7 +1367,9 @@ function init3D() {
     const holdSprite = new THREE.Sprite(new THREE.SpriteMaterial({ depthWrite: false })); holdSprite.scale.set(.42, .42, 1); holdSprite.position.set(.3, .78, 0); apple.add(holdSprite);
     scene.add(apple);
 
-    const tex = {}; for (const t of Object.keys(ITEM)) { tex[t] = new THREE.CanvasTexture(tokenCanvas(t)); }
+    const tex = {}, texL = {};
+    for (const t of Object.keys(ITEM)) { tex[t] = new THREE.CanvasTexture(tokenCanvas(t)); texL[t] = new THREE.CanvasTexture(tokenCanvas(t, true)); }
+    const glowGeo = new THREE.RingGeometry(.58, .76, 36);
     holdSprite.material.map = tex.peel;
 
     const tipRing = new THREE.Mesh(new THREE.RingGeometry(.62, .78, 40), new THREE.MeshBasicMaterial({ color: 0xf7c21b, transparent: true, opacity: .95, side: THREE.DoubleSide, depthWrite: false }));
@@ -1340,7 +1377,7 @@ function init3D() {
     const brickGeo = new THREE.BoxGeometry(.92, .7, .92);
     const brickMat = std(0xc8553d, { roughness: .8 }), brickGhost = std(0xc8553d, { transparent: true, opacity: .25, depthWrite: false });
 
-    T = { renderer, scene, camera, sun, body, ghostBody, makeHead, tipRing, heads: [], apple, appleInner, appleMats, aEyes, sweat, bubble, holdSprite,
+    T = { texL, glowGeo, renderer, scene, camera, sun, body, ghostBody, makeHead, tipRing, heads: [], apple, appleInner, appleMats, aEyes, sweat, bubble, holdSprite,
           tex, items: new Map(), bricks: [], brickGeo, brickMat, brickGhost, std, starMat,
           dummy: new THREE.Object3D(), col: new THREE.Color(), camF: 0, lastNow: performance.now(), level: null, floors: [] };
     if (G) buildLevel3D();
@@ -1350,7 +1387,7 @@ function init3D() {
 function buildLevel3D() {
   const { scene, std } = T;
   if (T.level) { scene.remove(T.level); T.level.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
-  for (const m of T.items.values()) scene.remove(m); T.items.clear();
+  for (const m of T.items.values()) { scene.remove(m); if (m.userData.glow) scene.remove(m.userData.glow); } T.items.clear();
   const L = new THREE.Group(); T.level = L; T.floors = []; T.pads = [];
   const rockGeo = new THREE.DodecahedronGeometry(.44, 0);
   for (let f = 0; f < F; f++) {
@@ -1493,16 +1530,30 @@ function render3D(now) {
   for (const it of S.items) {
     alive.add(it.id);
     let m = T.items.get(it.id);
-    if (!m) { m = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.tex[it.type], transparent: true })); T.scene.add(m); T.items.set(it.id, m); }
-    const w = W3(it.x, it.y), lf = it.life - (S.gt - it.born), peel = it.type === 'peel';
-    const s = peel ? .62 : .82 * (1 + Math.sin(now / 220 + it.id) * .06);
-    m.scale.set(s, s, 1);
-    m.position.set(w.x, it.f * FH + (peel ? .28 : .62 + Math.sin(now / 300 + it.id) * .08), w.z);
+    const peel = it.type === 'peel';
+    if (!m) {
+      m = new THREE.Sprite(new THREE.SpriteMaterial({ map: peel ? T.tex.peel : T.texL[it.type], transparent: true }));
+      if (!peel) {
+        m.center.set(.5, 1 - TOKEN_CY / TOKEN_LH);   // 讓圓章中心對準格子，名稱標籤在下方
+        m.userData.glow = new THREE.Mesh(T.glowGeo, new THREE.MeshBasicMaterial({ color: ITEM[it.type].ring, transparent: true, opacity: .8, side: THREE.DoubleSide, depthWrite: false }));
+        m.userData.glow.rotation.x = -Math.PI / 2; T.scene.add(m.userData.glow);
+      }
+      T.scene.add(m); T.items.set(it.id, m);
+    }
+    const w = W3(it.x, it.y), lf = it.life - (S.gt - it.born);
+    const s = peel ? .75 : 1.4 * (1 + Math.sin(now / 220 + it.id) * .05);
+    m.scale.set(s, peel ? s : s * TOKEN_LH / TOKEN_W, 1);
+    m.position.set(w.x, it.f * FH + (peel ? .3 : .95 + Math.sin(now / 300 + it.id) * .08), w.z);
+    if (m.userData.glow) {
+      const gl = m.userData.glow, pulse = .5 + Math.sin(now / 260 + it.id) * .5;
+      gl.position.set(w.x, it.f * FH + .03, w.z); gl.scale.setScalar(1 + pulse * .15);
+      gl.material.opacity = (it.f === vf ? .55 + pulse * .35 : .15); gl.visible = m.visible !== false;
+    }
     if (it.type === 'egg') { const p = (S.gt - it.born) / it.life; m.material.rotation = Math.sin(now / (120 - p * 80)) * (.08 + p * .35); }
     m.material.opacity = it.f === vf ? 1 : .3;
     m.visible = peel || it.type === 'egg' || !(lf < 2000 && Math.floor(now / 140) % 2);
   }
-  for (const [id, m] of T.items) if (!alive.has(id)) { T.scene.remove(m); m.material.dispose(); T.items.delete(id); }
+  for (const [id, m] of T.items) if (!alive.has(id)) { T.scene.remove(m); m.material.dispose(); if (m.userData.glow) { T.scene.remove(m.userData.glow); m.userData.glow.material.dispose(); } T.items.delete(id); }
 
   // 磚牆
   while (T.bricks.length < S.bricks.length) { const m = new THREE.Mesh(T.brickGeo, T.brickMat); m.castShadow = m.receiveShadow = true; T.scene.add(m); T.bricks.push(m); }
